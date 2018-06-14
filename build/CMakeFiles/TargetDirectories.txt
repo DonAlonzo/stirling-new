@@ -1,3 +1,0 @@
-/home/donalonzo/work/boman.io/stirling/build/CMakeFiles/rebuild_cache.dir
-/home/donalonzo/work/boman.io/stirling/build/CMakeFiles/edit_cache.dir
-/home/donalonzo/work/boman.io/stirling/build/CMakeFiles/stirling.dir
