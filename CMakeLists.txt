@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME} "")
 set(${PROJECT_NAME}_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_sources(${PROJECT_NAME}
     PUBLIC
+        ${${PROJECT_NAME}_SOURCE_DIR}/deleter.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/main.cpp)
 
 target_include_directories(${PROJECT_NAME}

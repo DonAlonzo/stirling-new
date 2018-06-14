@@ -1,3 +1,6 @@
+#include "deleter.hpp"
+#include "vulkan_assert.hpp"
+
 #include <vulkan/vulkan.h>
 
 #include <GLFW/glfw3.h>
@@ -45,25 +48,26 @@ int main() {
     instance_create_info.ppEnabledExtensionNames = enabled_extensions.data();
     instance_create_info.enabledExtensionCount   = enabled_extensions.size();
 
-    VkInstance instance;
-    if (vkCreateInstance(&instance_create_info, nullptr, &instance) != VK_SUCCESS) {
-        throw "Failed";
-    }
+    const auto instance = vulkan_create<VkInstance>(
+        vkCreateInstance,
+        vkDestroyInstance,
+        "Failed to create instance.",
+        &instance_create_info,
+        nullptr
+    );
 
     // Create window surface
-    VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-        throw "Fail you fuck";
-    }
+    Deleter<VkSurfaceKHR> surface{vkDestroySurfaceKHR, instance};
+    vulkan_assert(glfwCreateWindowSurface(instance, window, nullptr, surface.replace()), "Failed to create surface.");
 
     // Get number of physical devices
     uint32_t physical_device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
-    if (physical_device_count == 0) throw "Failed";
+    vulkan_assert(vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr), "Failed to get number of physical devices.");
+    if (physical_device_count == 0) throw "No physical devices found.";
 
     // Get physical devices
     std::vector<VkPhysicalDevice> physical_devices{ physical_device_count };
-    vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
+    vulkan_assert(vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()), "Failed to get physical devices.");
 
     // Just pick the first device god damn it
     auto physical_device = physical_devices[0];
@@ -88,14 +92,12 @@ int main() {
 
             // Check if present queue
             VkBool32 present_support;
-            if (vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support) != VK_SUCCESS) {
-                throw "Fail";
-            }
+            vulkan_assert(vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support), "Failed to get surface present support.");
             if (present_support) present_queue_family = i;
         }
     }
     if (graphics_queue_family == -1 || present_queue_family == -1)
-        throw "Fail";
+        throw "Failed to find all queue families.";
 
     // Prioritize queue families
     float queue_priorities[] = { 1.0f };
@@ -125,16 +127,20 @@ int main() {
     // Create device
     VkDeviceCreateInfo device_create_info = {};
     device_create_info.sType                 = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.pQueueCreateInfos     = queue_create_infos.data();
-    device_create_info.queueCreateInfoCount  = queue_create_infos.size();
+    device_create_info.pQueueCreateInfos     = queue_create_infos.data(),
+    device_create_info.queueCreateInfoCount  = queue_create_infos.size(),
     device_create_info.pEnabledFeatures      = &device_features;
     device_create_info.enabledExtensionCount = 0;
     device_create_info.enabledLayerCount     = 0;
 
-    VkDevice device;
-    if (vkCreateDevice(physical_device, &device_create_info, nullptr, &device) != VK_SUCCESS) {
-        throw "Fail!!!!";
-    }
+    const auto device = vulkan_create<VkDevice>(
+        vkCreateDevice,
+        vkDestroyDevice,
+        "Failed to create device.",
+        physical_device,
+        &device_create_info,
+        nullptr
+    );
 
     // Retrieve queue handles
     VkQueue graphics_queue;
@@ -218,10 +224,14 @@ int main() {
         swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    VkSwapchainKHR swapchain;
-    if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &swapchain) != VK_SUCCESS) {
-        throw "failed to create swap chain!";
-    }
+    const auto swapchain = vulkan_create<VkSwapchainKHR>(
+        vkCreateSwapchainKHR,
+        vkDestroySwapchainKHR,
+        device,
+        "Failed to create swapchain.",
+        &swapchain_create_info,
+        nullptr
+    );
 
     // Get swap chain image count
     vkGetSwapchainImagesKHR(device, swapchain, &swap_image_count, nullptr);
