@@ -107,8 +107,8 @@ int main() {
             .ppEnabledLayerNames     = nullptr,
             .enabledExtensionCount   = 0,
             .ppEnabledExtensionNames = nullptr,
-            .pEnabledFeatures        = Wrapper<VkPhysicalDeviceFeatures> {{
-            }}
+            .pEnabledFeatures        = std::vector<VkPhysicalDeviceFeatures> {{
+            }}.data()
         }, physical_device);
 
         // Retrieve queue handles
