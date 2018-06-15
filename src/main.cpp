@@ -136,7 +136,8 @@ int main() {
             }
 
             for (const auto& surface_format : surface_formats) {
-                if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM && surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM &&
+                    surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                     return surface_format;
                 }
             }
