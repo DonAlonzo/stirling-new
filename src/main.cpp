@@ -451,6 +451,8 @@ int main() {
             }
         }, VK_NULL_HANDLE, device);
 
+        // Drawing > Framebuffers
+
         // Loop
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
