@@ -171,6 +171,30 @@ int main() {
         const auto swapchain_images = vulkan_get_swapchain_images(device, swapchain);
 
         // Presentation > Image views
+        std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
+        for (size_t i = 0; i < swapchain_images.size(); ++i) {
+            swapchain_image_views[i] = vulkan_create_image_view({
+                .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext      = nullptr,
+                .flags      = 0,
+                .image      = swapchain_images[i],
+                .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+                .format     = surface_format.format,
+                .components = {
+                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
+                },
+                .subresourceRange = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            }, device);
+        }
 
         // Loop
         while (!glfwWindowShouldClose(window)) {

@@ -17,6 +17,8 @@ private:
 
 template<typename Handle>
 struct Deleter {
+    Deleter() = default;
+
     Deleter(void (*deleter)(Handle, const VkAllocationCallbacks*)) :
         deleter ([=]() { deleter(this->handle, nullptr); }) {
     }

@@ -80,6 +80,17 @@ inline Deleter<VkSwapchainKHR> vulkan_create_swapchain(const VkSwapchainCreateIn
     );
 }
 
+inline Deleter<VkImageView> vulkan_create_image_view(const VkImageViewCreateInfo& create_info, VkDevice device) {
+    return vulkan_create<VkImageView>(
+        vkCreateImageView,
+        vkDestroyImageView,
+        device,
+        "Failed to create image view.",
+        &create_info,
+        nullptr
+    );
+}
+
 inline std::vector<VkPhysicalDevice> vulkan_get_physical_devices(VkInstance instance) {
     // Get number of physical devices
     uint32_t physical_device_count = 0;
