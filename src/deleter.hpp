@@ -73,6 +73,7 @@ struct Deleter {
     }
 
     operator Handle() const { return handle; }
+    operator bool() const { return handle != nullptr; }
 
 private:
     Handle handle = VK_NULL_HANDLE;
