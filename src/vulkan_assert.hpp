@@ -31,3 +31,35 @@ inline Deleter<Handle> vulkan_create(
     vulkan_assert(create(parent, args..., handle.replace()), assertion_message);
     return handle;
 }
+
+inline Deleter<VkInstance> vulkan_create_instance(const VkInstanceCreateInfo& create_info) {
+    return vulkan_create<VkInstance>(
+        vkCreateInstance,
+        vkDestroyInstance,
+        "Failed to create instance.",
+        &create_info,
+        nullptr
+    );
+}
+
+inline Deleter<VkDevice> vulkan_create_device(const VkDeviceCreateInfo& create_info, VkPhysicalDevice physical_device) {
+    return vulkan_create<VkDevice>(
+        vkCreateDevice,
+        vkDestroyDevice,
+        "Failed to create device.",
+        physical_device,
+        &create_info,
+        nullptr
+    );
+}
+
+inline Deleter<VkSwapchainKHR> vulkan_create_swapchain(const VkSwapchainCreateInfoKHR& create_info, VkDevice device) {
+    return vulkan_create<VkSwapchainKHR>(
+        vkCreateSwapchainKHR,
+        vkDestroySwapchainKHR,
+        device,
+        "Failed to create swapchain.",
+        &create_info,
+        nullptr
+    );
+}

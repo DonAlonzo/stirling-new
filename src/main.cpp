@@ -22,15 +22,6 @@ int main() {
     //glfwSetWindowUserPointer(window, this);
     //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    // Create application information
-    VkApplicationInfo application_info = {};
-    application_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    application_info.pApplicationName   = "Hello Triangle";
-    application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    application_info.pEngineName        = "No Engine";
-    application_info.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    application_info.apiVersion         = VK_API_VERSION_1_0;
-
     // Get required extensions for GLFW
     uint32_t required_glfw_extensions_count = 0;
     auto required_glfw_extensions = glfwGetRequiredInstanceExtensions(&required_glfw_extensions_count);
@@ -39,22 +30,30 @@ int main() {
     std::vector<const char*> enabled_extensions = {};
     for (uint32_t i = 0; i < required_glfw_extensions_count; ++i)
         enabled_extensions.emplace_back(required_glfw_extensions[i]);
-    //enabled_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    
-    // Create instance
-    VkInstanceCreateInfo instance_create_info = {};
-    instance_create_info.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instance_create_info.pApplicationInfo        = &application_info;
-    instance_create_info.ppEnabledExtensionNames = enabled_extensions.data();
-    instance_create_info.enabledExtensionCount   = enabled_extensions.size();
+    //enabled_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);    
 
-    const auto instance = vulkan_create<VkInstance>(
-        vkCreateInstance,
-        vkDestroyInstance,
-        "Failed to create instance.",
-        &instance_create_info,
-        nullptr
-    );
+    // Create application information
+    VkApplicationInfo application_info = {
+        .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pNext              = nullptr,
+        .pApplicationName   = "Hello Triangle",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName        = "No Engine",
+        .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion         = VK_API_VERSION_1_0
+    };
+
+    // Create instance
+    const auto instance = vulkan_create_instance({
+        .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pNext                   = nullptr,
+        .flags                   = 0,
+        .pApplicationInfo        = &application_info,
+        .enabledLayerCount       = 0,
+        .ppEnabledLayerNames     = nullptr,
+        .enabledExtensionCount   = enabled_extensions.size(),
+        .ppEnabledExtensionNames = enabled_extensions.data()
+    });
 
     // Create window surface
     Deleter<VkSurfaceKHR> surface{vkDestroySurfaceKHR, instance};
@@ -102,45 +101,44 @@ int main() {
     // Prioritize queue families
     float queue_priorities[] = { 1.0f };
 
-    // Create graphics device queue
-    VkDeviceQueueCreateInfo graphics_queue_create_info = {};
-    graphics_queue_create_info.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    graphics_queue_create_info.queueFamilyIndex = graphics_queue_family;
-    graphics_queue_create_info.queueCount       = 1;
-    graphics_queue_create_info.pQueuePriorities = queue_priorities;
-    
-    // Create present device queue
-    VkDeviceQueueCreateInfo present_queue_create_info = {};
-    present_queue_create_info.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    present_queue_create_info.queueFamilyIndex = present_queue_family;
-    present_queue_create_info.queueCount       = 1;
-    present_queue_create_info.pQueuePriorities = queue_priorities;
-
+    // Create device queues
     const std::vector<VkDeviceQueueCreateInfo> queue_create_infos = {
-        graphics_queue_create_info,
-        present_queue_create_info
+        // Graphics queue
+        {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext            = nullptr,
+            .flags            = 0,
+            .queueFamilyIndex = graphics_queue_family,
+            .queueCount       = 1,
+            .pQueuePriorities = queue_priorities
+        },
+        // Present queue
+        {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext            = nullptr,
+            .flags            = 0,
+            .queueFamilyIndex = present_queue_family,
+            .queueCount       = 1,
+            .pQueuePriorities = queue_priorities
+        }
     };
 
     // Specify physical device features
     VkPhysicalDeviceFeatures device_features = {};
     
     // Create device
-    VkDeviceCreateInfo device_create_info = {};
-    device_create_info.sType                 = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.pQueueCreateInfos     = queue_create_infos.data(),
-    device_create_info.queueCreateInfoCount  = queue_create_infos.size(),
-    device_create_info.pEnabledFeatures      = &device_features;
-    device_create_info.enabledExtensionCount = 0;
-    device_create_info.enabledLayerCount     = 0;
-
-    const auto device = vulkan_create<VkDevice>(
-        vkCreateDevice,
-        vkDestroyDevice,
-        "Failed to create device.",
-        physical_device,
-        &device_create_info,
-        nullptr
-    );
+    const auto device = vulkan_create_device({
+        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext                   = nullptr,
+        .flags                   = 0,
+        .queueCreateInfoCount    = queue_create_infos.size(),
+        .pQueueCreateInfos       = queue_create_infos.data(),
+        .enabledLayerCount       = 0,
+        .ppEnabledLayerNames     = nullptr,
+        .enabledExtensionCount   = 0,
+        .ppEnabledExtensionNames = nullptr,
+        .pEnabledFeatures        = &device_features
+    }, physical_device);
 
     // Retrieve queue handles
     VkQueue graphics_queue;
@@ -207,31 +205,23 @@ int main() {
 
     // Create swap chain
     uint32_t queue_family_indices[] = { graphics_queue_family, present_queue_family };
-    VkSwapchainCreateInfoKHR swapchain_create_info = {};
-    swapchain_create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchain_create_info.surface          = surface;
-    swapchain_create_info.minImageCount    = swap_image_count;
-    swapchain_create_info.imageFormat      = surface_format.format;
-    swapchain_create_info.imageColorSpace  = surface_format.colorSpace;
-    swapchain_create_info.imageExtent      = surface_extent;
-    swapchain_create_info.imageArrayLayers = 1;
-    swapchain_create_info.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (graphics_queue_family != present_queue_family) {
-        swapchain_create_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
-        swapchain_create_info.queueFamilyIndexCount = 2;
-        swapchain_create_info.pQueueFamilyIndices   = queue_family_indices;
-    } else {
-        swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
 
-    const auto swapchain = vulkan_create<VkSwapchainKHR>(
-        vkCreateSwapchainKHR,
-        vkDestroySwapchainKHR,
-        device,
-        "Failed to create swapchain.",
-        &swapchain_create_info,
-        nullptr
-    );
+    const bool concurrent = graphics_queue_family != present_queue_family;
+    const auto swapchain = vulkan_create_swapchain({
+        .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .pNext                 = nullptr,
+        .flags                 = 0,
+        .surface               = surface,
+        .minImageCount         = swap_image_count,
+        .imageFormat           = surface_format.format,
+        .imageColorSpace       = surface_format.colorSpace,
+        .imageExtent           = surface_extent,
+        .imageArrayLayers      = 1,
+        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageSharingMode      = concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = concurrent ? 2 : 0,
+        .pQueueFamilyIndices   = concurrent ? queue_family_indices : nullptr,
+    }, device);
 
     // Get swap chain image count
     vkGetSwapchainImagesKHR(device, swapchain, &swap_image_count, nullptr);
