@@ -417,12 +417,12 @@ int main() {
                     .pNext = nullptr,
                     .flags = 0,
 
-                    .logicOpEnable     = VK_FALSE,
-                    .logicOp           = VK_LOGIC_OP_COPY,
+                    .logicOpEnable = VK_FALSE,
+                    .logicOp       = VK_LOGIC_OP_COPY,
 
                     // Attachments
-                    .attachmentCount   = 1,
-                    .pAttachments      = std::vector<VkPipelineColorBlendAttachmentState>{{
+                    .attachmentCount = 1,
+                    .pAttachments    = std::vector<VkPipelineColorBlendAttachmentState>{{
                         .blendEnable         = VK_FALSE,
                         .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
                         .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
