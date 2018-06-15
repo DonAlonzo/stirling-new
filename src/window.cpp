@@ -34,3 +34,10 @@ Window& Window::operator=(Window&& rhs) {
 Window::operator GLFWwindow*() const {
     return window;
 }
+
+std::vector<const char*> Window::get_required_instance_extensions() const {
+    // Get required extensions for GLFW
+    uint32_t required_glfw_extensions_count = 0;
+    const auto required_glfw_extensions = glfwGetRequiredInstanceExtensions(&required_glfw_extensions_count);
+    return {required_glfw_extensions, required_glfw_extensions + required_glfw_extensions_count};
+}

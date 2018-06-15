@@ -19,7 +19,7 @@ int main() {
         const Window window{width, height, "Stirling Engine"};
 
         // Set enabled extensions
-        const auto enabled_extensions = vulkan_get_required_instance_extensions();
+        const auto enabled_extensions = window.get_required_instance_extensions();
         //enabled_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);    
 
         // Create instance

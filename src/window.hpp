@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <vector>
+
 struct Window {
     Window(uint32_t width, uint32_t height, const char* title);
     ~Window();
@@ -12,6 +14,8 @@ struct Window {
     Window& operator=(Window&&);
 
     operator GLFWwindow*() const;
+
+    std::vector<const char*> get_required_instance_extensions() const;
 
 private:
     GLFWwindow* window;

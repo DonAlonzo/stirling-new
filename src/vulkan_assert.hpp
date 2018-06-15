@@ -37,13 +37,6 @@ inline Deleter<Handle> vulkan_create(
     return handle;
 }
 
-inline std::vector<const char*> vulkan_get_required_instance_extensions() {
-    // Get required extensions for GLFW
-    uint32_t required_glfw_extensions_count = 0;
-    auto required_glfw_extensions = glfwGetRequiredInstanceExtensions(&required_glfw_extensions_count);
-    return {required_glfw_extensions, required_glfw_extensions + required_glfw_extensions_count};
-}
-
 inline Deleter<VkInstance> vulkan_create_instance(const VkInstanceCreateInfo& create_info) {
     return vulkan_create<VkInstance>(
         vkCreateInstance,
