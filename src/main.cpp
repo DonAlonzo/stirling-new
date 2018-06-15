@@ -30,9 +30,9 @@ int main() {
             .pApplicationInfo        = std::vector<VkApplicationInfo> {{
                 .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pNext              = nullptr,
-                .pApplicationName   = "Hello Triangle",
+                .pApplicationName   = "Stirling Engine Demo",
                 .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-                .pEngineName        = "No Engine",
+                .pEngineName        = "Stirling Engine",
                 .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
                 .apiVersion         = VK_API_VERSION_1_0
             }}.data(),
