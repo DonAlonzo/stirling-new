@@ -27,7 +27,7 @@ int main() {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .pApplicationInfo        = Wrapper<VkApplicationInfo>{{
+            .pApplicationInfo        = std::vector<VkApplicationInfo> {{
                 .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pNext              = nullptr,
                 .pApplicationName   = "Hello Triangle",
@@ -35,7 +35,7 @@ int main() {
                 .pEngineName        = "No Engine",
                 .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
                 .apiVersion         = VK_API_VERSION_1_0
-            }},
+            }}.data(),
             .enabledLayerCount       = 0,
             .ppEnabledLayerNames     = nullptr,
             .enabledExtensionCount   = enabled_extensions.size(),
