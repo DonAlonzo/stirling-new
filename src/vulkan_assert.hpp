@@ -1,5 +1,14 @@
 #pragma once
 
+template<typename T>
+struct Wrapper {
+    Wrapper(T t) : t (t) {}
+    operator T*() { return &t; }
+
+private:
+    T t;
+};
+
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
     case VK_SUCCESS: return;
