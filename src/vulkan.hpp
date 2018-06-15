@@ -5,6 +5,14 @@
 #include <memory>
 #include <vector>
 
+template<typename T>
+struct Wrapper {
+    Wrapper(T t) : t (t) {}
+    operator T*() { return &t; }
+private:
+    T t;
+};
+
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
     case VK_SUCCESS: return;
@@ -89,6 +97,69 @@ inline Deleter<VkImageView> vulkan_create_image_view(const VkImageViewCreateInfo
         &create_info,
         nullptr
     );
+}
+
+inline Deleter<VkShaderModule> vulkan_create_shader_module(const VkShaderModuleCreateInfo& create_info, VkDevice device) {
+    return vulkan_create<VkShaderModule>(
+        vkCreateShaderModule,
+        vkDestroyShaderModule,
+        device,
+        "Failed to create shader module.",
+        &create_info,
+        nullptr
+    );
+}
+
+inline Deleter<VkShaderModule> vulkan_create_shader_module(const char* file_name, VkDevice device) {
+    const auto code = read_file(file_name);
+    return vulkan_create_shader_module({
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .pNext    = nullptr,
+        .flags    = 0,
+        .codeSize = code.size(),
+        .pCode    = reinterpret_cast<const uint32_t*>(code.data())
+    }, device);
+}
+
+inline Deleter<VkRenderPass> vulkan_create_render_pass(const VkRenderPassCreateInfo& create_info, VkDevice device) {
+    return vulkan_create<VkRenderPass>(
+        vkCreateRenderPass,
+        vkDestroyRenderPass,
+        device,
+        "Failed to create render pass.",
+        &create_info,
+        nullptr
+    );
+}
+
+inline Deleter<VkPipelineLayout> vulkan_create_pipeline_layout(const VkPipelineLayoutCreateInfo& create_info, VkDevice device) {
+    return vulkan_create<VkPipelineLayout>(
+        vkCreatePipelineLayout,
+        vkDestroyPipelineLayout,
+        device,
+        "Failed to create pipeline layout.",
+        &create_info,
+        nullptr
+    );
+}
+
+inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
+    const std::vector<VkGraphicsPipelineCreateInfo>& create_infos,
+    VkPipelineCache                                  pipeline_cache,
+    VkDevice                                         device) {
+
+    VkPipeline* pipeline_pointer;
+    vulkan_assert(
+        vkCreateGraphicsPipelines(device, pipeline_cache, create_infos.size(), create_infos.data(), nullptr, pipeline_pointer),
+        "Failed to create pipelines."
+    );
+
+    std::vector<Deleter<VkPipeline>> pipelines{create_infos.size()};
+    for (size_t i = 0; i < create_infos.size(); ++i) {
+        pipelines[i].replace(*(pipeline_pointer + i));
+    }
+
+    return pipelines;
 }
 
 inline std::vector<VkPhysicalDevice> vulkan_get_physical_devices(VkInstance instance) {

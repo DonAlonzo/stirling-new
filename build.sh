@@ -4,7 +4,15 @@
 
 mkdir -p build
 cd build
+
+# Build Stirling Engine
 cmake ..
 make
+
+# Build shaders
+glslangValidator -V ../shaders/shader.vert
+glslangValidator -V ../shaders/shader.frag
+
+#Run Stirling Engine Demo
 echo
 ./stirling

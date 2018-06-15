@@ -69,6 +69,11 @@ struct Deleter {
         destroy();
     }
 
+    void replace(Handle handle) {
+        destroy();
+        this->handle = handle;
+    }
+
     Handle* replace() {
         destroy();
         return &handle;
