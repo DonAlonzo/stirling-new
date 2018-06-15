@@ -54,7 +54,7 @@ int main() {
         // Get queue families on physical device
         const auto queue_families = vulkan_get_queue_families(physical_device);
 
-        // Find queue familie indices
+        // Find queue family indices
         uint32_t graphics_queue_family_index = -1;
         uint32_t present_queue_family_index = -1;
         for (uint32_t i = 0; i < queue_families.size(); ++i) {
