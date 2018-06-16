@@ -20,8 +20,9 @@ int main() {
         const Window window{width, height, "Stirling Engine"};
 
         // Set enabled extensions
-        const auto enabled_extensions = window.get_required_instance_extensions();
+        auto enabled_extensions = window.get_required_instance_extensions();
         //enabled_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);    
+        enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
         // Create instance
         const auto instance = vulkan_create_instance({
@@ -30,7 +31,7 @@ int main() {
             .flags = 0,
 
             // Application info
-            .pApplicationInfo = Wrapper<VkApplicationInfo>{{
+            .pApplicationInfo = Pointer<VkApplicationInfo>{{
                 .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pNext              = nullptr,
                 .pApplicationName   = "Stirling Engine Demo",
@@ -41,13 +42,40 @@ int main() {
             }},
 
             // Enabled layers
-            .enabledLayerCount       = 0,
-            .ppEnabledLayerNames     = nullptr,
+            .enabledLayerCount   = 1,
+            .ppEnabledLayerNames = std::vector<const char*>{
+                "VK_LAYER_LUNARG_standard_validation"
+            }.data(),
 
             // Enabled extensions
             .enabledExtensionCount   = enabled_extensions.size(),
             .ppEnabledExtensionNames = enabled_extensions.data()
         });
+
+        // Create debug report callback
+        const auto debug_callback_handle = vulkan_create_debug_report_callback({
+            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .pNext = nullptr,
+            .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+
+            // Callback
+            .pfnCallback = [](
+                const auto flags, 
+                const auto object_type, 
+                const auto object, 
+                const auto location, 
+                const auto code, 
+                const auto layer_prefix, 
+                const auto message, 
+                const auto user_data) -> VkBool32 {
+
+                std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
+                return VK_FALSE;
+            },
+
+            // User data
+            .pUserData = nullptr
+        }, instance);
 
         // Create window surface
         const auto surface = vulkan_create_surface(instance, window);
@@ -91,8 +119,8 @@ int main() {
             .flags = 0,
 
             // Queues
-            .queueCreateInfoCount    = 2,
-            .pQueueCreateInfos       = std::vector<VkDeviceQueueCreateInfo> {
+            .queueCreateInfoCount = 2,
+            .pQueueCreateInfos    = std::vector<VkDeviceQueueCreateInfo> {
                 // Graphics queue
                 {
                     .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -122,7 +150,7 @@ int main() {
             .ppEnabledExtensionNames = nullptr,
 
             // Enabled features
-            .pEnabledFeatures        = std::vector<VkPhysicalDeviceFeatures> {{
+            .pEnabledFeatures = std::vector<VkPhysicalDeviceFeatures>{{
             }}.data()
         }, physical_device);
 
@@ -190,9 +218,9 @@ int main() {
         std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
         for (size_t i = 0; i < swapchain_images.size(); ++i) {
             swapchain_image_views[i] = vulkan_create_image_view({
-                .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .pNext      = nullptr,
-                .flags      = 0,
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
 
                 .image      = swapchain_images[i],
                 .viewType   = VK_IMAGE_VIEW_TYPE_2D,
@@ -235,9 +263,9 @@ int main() {
             }}.data(),
 
             // Subpasses
-            .subpassCount    = 1,
-            .pSubpasses      = std::vector<VkSubpassDescription>{{
-                .flags             = 0,
+            .subpassCount = 1,
+            .pSubpasses   = std::vector<VkSubpassDescription>{{
+                .flags = 0,
 
                 // Pipeline bind point
                 .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -265,8 +293,25 @@ int main() {
             }}.data(),
 
             // Dependencies
-            .dependencyCount = 0,
-            .pDependencies   = nullptr
+            .dependencyCount = 1,
+            .pDependencies   = std::vector<VkSubpassDependency>{
+                {
+                    // Subpasses
+                    .srcSubpass = VK_SUBPASS_EXTERNAL,
+                    .dstSubpass = 0,
+
+                    // Stage masks
+                    .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+
+                    // Access masks
+                    .srcAccessMask = 0,
+                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+
+                    // Flags
+                    .dependencyFlags = 0
+                }
+            }.data()
         }, device);
 
         // Create pipeline layout
@@ -310,7 +355,7 @@ int main() {
                     {
                         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                         .pNext = nullptr,
-                        .flags=  0,
+                        .flags = 0,
 
                         .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
                         .module              = vulkan_create_shader_module("frag.spv", device),
@@ -320,14 +365,14 @@ int main() {
                 }.data(),
 
                 // Vertex input
-                .pVertexInputState = Wrapper<VkPipelineVertexInputStateCreateInfo>{{
+                .pVertexInputState = Pointer<VkPipelineVertexInputStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
 
                     // Vertex binding descriptions
-                    .vertexBindingDescriptionCount   = 0,
-                    .pVertexBindingDescriptions      = nullptr,
+                    .vertexBindingDescriptionCount = 0,
+                    .pVertexBindingDescriptions    = nullptr,
 
                     // Vertex attribute
                     .vertexAttributeDescriptionCount = 0,
@@ -335,7 +380,7 @@ int main() {
                 }},
 
                 // Input assembly
-                .pInputAssemblyState = Wrapper<VkPipelineInputAssemblyStateCreateInfo>{{
+                .pInputAssemblyState = Pointer<VkPipelineInputAssemblyStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
@@ -348,7 +393,7 @@ int main() {
                 .pTessellationState = nullptr,
 
                 // Viewport
-                .pViewportState = Wrapper<VkPipelineViewportStateCreateInfo>{{
+                .pViewportState = Pointer<VkPipelineViewportStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
@@ -377,7 +422,7 @@ int main() {
                 }},
 
                 // Rasterization
-                .pRasterizationState = Wrapper<VkPipelineRasterizationStateCreateInfo>{{
+                .pRasterizationState = Pointer<VkPipelineRasterizationStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
@@ -395,7 +440,7 @@ int main() {
                 }},
 
                 // Multisampler
-                .pMultisampleState = Wrapper<VkPipelineMultisampleStateCreateInfo>{{
+                .pMultisampleState = Pointer<VkPipelineMultisampleStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
@@ -412,7 +457,7 @@ int main() {
                 .pDepthStencilState = nullptr,
 
                 // Color blending
-                .pColorBlendState = Wrapper<VkPipelineColorBlendStateCreateInfo>{{
+                .pColorBlendState = Pointer<VkPipelineColorBlendStateCreateInfo>{{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
                     .pNext = nullptr,
                     .flags = 0,
@@ -443,20 +488,165 @@ int main() {
                 // Dynamic state
                 .pDynamicState = nullptr,
 
-                .layout              = pipeline_layout,
-                .renderPass          = render_pass,
-                .subpass             = 0,
-                .basePipelineHandle  = VK_NULL_HANDLE,
-                .basePipelineIndex   = -1
+                .layout             = pipeline_layout,
+                .renderPass         = render_pass,
+                .subpass            = 0,
+                .basePipelineHandle = VK_NULL_HANDLE,
+                .basePipelineIndex  = -1
             }
-        }, VK_NULL_HANDLE, device);
+        }, VK_NULL_HANDLE, device)[0];
 
-        // Drawing > Framebuffers
+        // Create framebuffers
+        std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
+        for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
+            swapchain_framebuffers[i] = vulkan_create_framebuffer({
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+
+                // Render pass
+                .renderPass = render_pass,
+
+                // Attachments
+                .attachmentCount = 1,
+                .pAttachments    = std::vector<VkImageView>{
+                    swapchain_image_views[i]
+                }.data(),
+
+                // Dimensions
+                .width  = surface_extent.width,
+                .height = surface_extent.height,
+                .layers = 1
+            }, device);
+        }
+
+        // Create command pool
+        const auto command_pool = vulkan_create_command_pool({
+            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+
+            .queueFamilyIndex = graphics_queue_family_index
+        }, device);
+
+        // Allocate command buffers
+        const auto command_buffers = vulkan_allocate_command_buffers({
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext = nullptr,
+
+            .commandPool        = command_pool,
+            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = swapchain_framebuffers.size()
+        }, device);
+
+        // Record command buffers
+        for (size_t i = 0; i < command_buffers.size(); ++i) {
+            // Begin command buffer
+            vulkan_begin_command_buffer({
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .pNext = nullptr,
+                .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+                
+                .pInheritanceInfo = nullptr
+            }, command_buffers[i]);
+
+            // Begin render pass
+            vulkan_begin_render_pass({
+                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .pNext = nullptr,
+
+                .renderPass  = render_pass,
+                .framebuffer = swapchain_framebuffers[i],
+                .renderArea = {
+                    .offset = { 0, 0 },
+                    .extent = surface_extent
+                },
+
+                // Clear values
+                .clearValueCount = 1,
+                .pClearValues    = Pointer<VkClearValue>{
+                    { 0.0f, 0.0f, 0.0f, 1.0f }
+                }
+            }, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);
+
+            // Bind pipeline
+            vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+            // Draw
+            vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+
+            // End render pass
+            vkCmdEndRenderPass(command_buffers[i]);
+
+            // End command buffer
+            vulkan_assert(vkEndCommandBuffer(command_buffers[i]), "Failed to record command buffer.");
+        }
+
+        // Create semaphores
+        const auto image_available_semaphore = vulkan_create_semaphore(device);
+        const auto render_finished_semaphore = vulkan_create_semaphore(device);
 
         // Loop
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+
+            // Get next image from swapchain
+            const auto image_index = vulkan_acquire_next_image(device, swapchain, image_available_semaphore);
+            
+            // Submit command buffer to graphics queue
+            vulkan_queue_submit({
+                {
+                    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                    .pNext = nullptr,
+
+                    // Wait semaphores
+                    .waitSemaphoreCount = 1,
+                    .pWaitSemaphores    = std::vector<VkSemaphore>{
+                        image_available_semaphore
+                    }.data(),
+                    .pWaitDstStageMask  = std::vector<VkPipelineStageFlags>{
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+                    }.data(),
+
+                    // Command buffers
+                    .commandBufferCount = 1,
+                    .pCommandBuffers    = &command_buffers[image_index],
+
+                    // Signal semaphores
+                    .signalSemaphoreCount = 1,
+                    .pSignalSemaphores    = std::vector<VkSemaphore>{
+                        render_finished_semaphore
+                    }.data()
+                }
+            }, graphics_queue, VK_NULL_HANDLE);
+
+            // Present images
+            vulkan_queue_present({
+                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                .pNext = nullptr,
+
+                // Wait semaphores
+                .waitSemaphoreCount = 1,
+                .pWaitSemaphores    = std::vector<VkSemaphore>{
+                    render_finished_semaphore
+                }.data(),
+
+                // Swapchains
+                .swapchainCount = 1,
+                .pSwapchains    = std::vector<VkSwapchainKHR>{
+                    swapchain
+                }.data(),
+
+                // Image indices
+                .pImageIndices = &image_index,
+
+                // Results
+                .pResults = nullptr
+            }, present_queue);
         }
+
+        // Wait until device is idle
+        vkDeviceWaitIdle(device);
     } catch (const char* message) {
         std::cout << message << '\n';
     }
