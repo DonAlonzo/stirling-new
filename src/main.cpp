@@ -102,10 +102,12 @@ int main() {
 
             // Queues
             .queueCreateInfoCount = [&queue_families]() {
+                // Only one queue per unique queue family index
                 return std::set<uint32_t>{queue_families.graphics_queue, queue_families.present_queue}.size();
             }(),
-            .pQueueCreateInfos = [&queue_families]() {
+            .pQueueCreateInfos = [&queue_families, queue_priorities = std::vector<float>{ 1.0f }]() {
                 std::vector<VkDeviceQueueCreateInfo> create_infos;
+                // Only one queue per unique queue family index
                 for (const auto queue_family : std::set<uint32_t>{
                     queue_families.graphics_queue,
                     queue_families.present_queue
@@ -118,9 +120,7 @@ int main() {
                         // Queue info
                         .queueFamilyIndex = queue_families.graphics_queue,
                         .queueCount       = 1,
-                        .pQueuePriorities = std::vector<float>{
-                            1.0f
-                        }.data()
+                        .pQueuePriorities = queue_priorities.data()
                     });
                 }
                 return create_infos;
@@ -201,26 +201,26 @@ int main() {
             .pNext = nullptr,
             .flags = 0,
 
-            .surface               = surface,
-            .minImageCount         = swap_image_count,
+            .surface       = surface,
+            .minImageCount = swap_image_count,
 
             // Image properties
-            .imageFormat           = surface_format.format,
-            .imageColorSpace       = surface_format.colorSpace,
-            .imageExtent           = surface_extent,
-            .imageArrayLayers      = 1,
-            .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode      = concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+            .imageFormat      = surface_format.format,
+            .imageColorSpace  = surface_format.colorSpace,
+            .imageExtent      = surface_extent,
+            .imageArrayLayers = 1,
+            .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .imageSharingMode = concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
 
             // Queue families
             .queueFamilyIndexCount = concurrent ? 2 : 0,
             .pQueueFamilyIndices   = concurrent ? queue_family_indices : nullptr,
             
-            .preTransform          = surface_capabilities.currentTransform,
-            .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode           = present_mode,
-            .clipped               = VK_TRUE,
-            .oldSwapchain          = VK_NULL_HANDLE
+            .preTransform   = surface_capabilities.currentTransform,
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode    = present_mode,
+            .clipped        = VK_TRUE,
+            .oldSwapchain   = VK_NULL_HANDLE
         }, device);
 
         // Get swapchain images
