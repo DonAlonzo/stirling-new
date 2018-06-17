@@ -223,35 +223,38 @@ int main() {
             .oldSwapchain   = VK_NULL_HANDLE
         }, device);
 
-        // Get swapchain images
-        const auto swapchain_images = vulkan_get_swapchain_images(device, swapchain);
-
         // Create swapchain image views
-        std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
-        for (size_t i = 0; i < swapchain_images.size(); ++i) {
-            swapchain_image_views[i] = vulkan_create_image_view({
-                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
+        const auto swapchain_image_views = [&]() {
+            // Get swapchain images
+            const auto swapchain_images = vulkan_get_swapchain_images(device, swapchain);
+            
+            std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
+            for (size_t i = 0; i < swapchain_images.size(); ++i) {
+                swapchain_image_views[i] = vulkan_create_image_view({
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                    .pNext = nullptr,
+                    .flags = 0,
 
-                .image      = swapchain_images[i],
-                .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-                .format     = surface_format.format,
-                .components = {
-                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
-                },
-                .subresourceRange = {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1
-                }
-            }, device);
-        }
+                    .image      = swapchain_images[i],
+                    .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+                    .format     = surface_format.format,
+                    .components = {
+                        .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .a = VK_COMPONENT_SWIZZLE_IDENTITY
+                    },
+                    .subresourceRange = {
+                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .baseMipLevel   = 0,
+                        .levelCount     = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount     = 1
+                    }
+                }, device);
+            }
+            return swapchain_image_views;
+        }();
 
         // Create render pass
         const auto render_pass = vulkan_create_render_pass({
@@ -324,21 +327,6 @@ int main() {
                     .dependencyFlags = 0
                 }
             }.data()
-        }, device);
-
-        // Create pipeline layout
-        const auto pipeline_layout = vulkan_create_pipeline_layout({
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-
-            // Set layouts
-            .setLayoutCount = 0,
-            .pSetLayouts    = nullptr,
-
-            // Push constant ranges
-            .pushConstantRangeCount = 0,
-            .pPushConstantRanges    = nullptr
         }, device);
 
         // Create pipelines
@@ -472,6 +460,7 @@ int main() {
                 .pNext = nullptr,
                 .flags = 0,
 
+                // Logical operation
                 .logicOpEnable = VK_FALSE,
                 .logicOp       = VK_LOGIC_OP_COPY,
 
@@ -498,9 +487,28 @@ int main() {
             // Dynamic state
             .pDynamicState = nullptr,
 
-            .layout             = pipeline_layout,
-            .renderPass         = render_pass,
-            .subpass            = 0,
+            // Layout
+            .layout = vulkan_create_pipeline_layout({
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+
+                // Set layouts
+                .setLayoutCount = 0,
+                .pSetLayouts    = nullptr,
+
+                // Push constant ranges
+                .pushConstantRangeCount = 0,
+                .pPushConstantRanges    = nullptr
+            }, device),
+
+            // Render pass
+            .renderPass = render_pass,
+
+            // Subpass
+            .subpass = 0,
+
+            // Base pipeline
             .basePipelineHandle = VK_NULL_HANDLE,
             .basePipelineIndex  = -1
         }, VK_NULL_HANDLE, device);
