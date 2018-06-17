@@ -595,11 +595,16 @@ int main() {
         constexpr auto max_frames_in_flight = 2;
         const auto image_available_semaphores = vulkan_create_semaphores(device, max_frames_in_flight);
         const auto render_finished_semaphores = vulkan_create_semaphores(device, max_frames_in_flight);
+        const auto in_flight_fences = vulkan_create_fences(device, max_frames_in_flight, true);
 
         // Loop
         size_t current_frame = 0;
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+
+            /// Wait for frame to be finished and reset fence
+            vulkan_wait_for_fence(device, in_flight_fences[current_frame]);
+            vulkan_reset_fence(device, in_flight_fences[current_frame]);
 
             // Get next image from swapchain
             const auto image_index = vulkan_acquire_next_image(device, swapchain, image_available_semaphores[current_frame]);
@@ -629,7 +634,7 @@ int main() {
                         render_finished_semaphores[current_frame]
                     }.data()
                 }
-            }, graphics_queue, VK_NULL_HANDLE);
+            }, graphics_queue, in_flight_fences[current_frame]);
 
             // Present images
             vulkan_queue_present({

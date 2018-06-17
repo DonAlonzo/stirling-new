@@ -12,7 +12,7 @@ struct ReferenceCounter {
     size_t operator--();
 private:
     std::mutex mutex;
-    size_t references;
+    size_t count = 1;
 };
 
 template<typename Handle>
@@ -42,11 +42,15 @@ struct Deleter {
     }
 
     Deleter& operator=(const Deleter& rhs) {
+        check_delete();
+
         handle = rhs.handle;
         reference_counter = rhs.reference_counter;
         deleter = rhs.deleter;
 
         ++(*reference_counter);
+
+        return *this;
     }
 
     Deleter(Deleter&& rhs) :
@@ -58,24 +62,28 @@ struct Deleter {
     }
 
     Deleter& operator=(Deleter&& rhs) {
+        check_delete();
+        
         handle = std::move(rhs.handle);
         reference_counter = std::move(rhs.reference_counter);
         deleter = (rhs.deleter);
 
         rhs.handle = VK_NULL_HANDLE;
+
+        return *this;
     }
 
     ~Deleter() {
-        destroy();
+        check_delete();
     }
 
     void replace(Handle handle) {
-        destroy();
+        check_delete();
         this->handle = handle;
     }
 
     Handle* replace() {
-        destroy();
+        check_delete();
         return &handle;
     }
 
@@ -87,7 +95,7 @@ private:
     std::shared_ptr<ReferenceCounter> reference_counter = std::make_shared<ReferenceCounter>();
     std::function<void()> deleter;
 
-    void destroy() {
+    void check_delete() {
         if (handle != VK_NULL_HANDLE && deleter && --(*reference_counter) == 0) {
             deleter();
             deleter = nullptr;

@@ -219,13 +219,35 @@ inline Deleter<VkSemaphore> vulkan_create_semaphore(VkDevice device) {
 inline std::vector<Deleter<VkSemaphore>> vulkan_create_semaphores(VkDevice device, size_t count) {
     std::vector<Deleter<VkSemaphore>> semaphores{count};
     for (size_t i = 0; i < count; ++i) {
-        semaphores[i] = vulkan_create_semaphore({
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0
-        }, device);
+        semaphores[i] = vulkan_create_semaphore(device);
     }
     return semaphores;
+}
+
+inline Deleter<VkFence> vulkan_create_fence(const VkFenceCreateInfo& create_info, VkDevice device) {
+    return vulkan_create<VkFence>(
+        vkCreateFence,
+        vkDestroyFence,
+        device,
+        "Failed to create fence.",
+        &create_info
+    );
+}
+
+inline Deleter<VkFence> vulkan_create_fence(VkDevice device, bool signaled = false) {
+    return vulkan_create_fence({
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0
+    }, device);
+}
+
+inline std::vector<Deleter<VkFence>> vulkan_create_fences(VkDevice device, size_t count, bool signaled = false) {
+    std::vector<Deleter<VkFence>> fences{count};
+    for (size_t i = 0; i < count; ++i) {
+        fences[i] = vulkan_create_fence(device, signaled);
+    }
+    return fences;
 }
 
 inline Deleter<VkCommandPool> vulkan_create_command_pool(const VkCommandPoolCreateInfo& create_info, VkDevice device) {
@@ -258,6 +280,44 @@ inline void vulkan_begin_render_pass(const VkRenderPassBeginInfo& begin_info, Vk
     vkCmdBeginRenderPass(command_buffer, &begin_info, contents);
 }
 
+inline void vulkan_wait_for_fence(
+    VkDevice device,
+    std::vector<VkFence> fences,
+    VkBool32 wait_all = VK_TRUE,
+    uint64_t timeout = std::numeric_limits<uint64_t>::max()) {
+
+    vulkan_assert(
+        vkWaitForFences(device, fences.size(), fences.data(), wait_all, timeout),
+        "Failed to wait for fences."
+    );
+}
+
+inline void vulkan_wait_for_fence(
+    VkDevice device,
+    VkFence fence,
+    VkBool32 wait_all = VK_TRUE,
+    uint64_t timeout = std::numeric_limits<uint64_t>::max()) {
+
+    vulkan_assert(
+        vkWaitForFences(device, 1, &fence, wait_all, timeout),
+        "Failed to wait for fence."
+    );
+}
+
+inline void vulkan_reset_fence(VkDevice device, std::vector<VkFence> fences) {
+    vulkan_assert(
+        vkResetFences(device, fences.size(), fences.data()),
+        "Failed to reset fences."
+    );
+}
+
+inline void vulkan_reset_fence(VkDevice device, VkFence fence) {
+    vulkan_assert(
+        vkResetFences(device, 1, &fence),
+        "Failed to reset fence."
+    );
+}
+
 inline uint32_t vulkan_acquire_next_image(
     VkDevice       device,
     VkSwapchainKHR swapchain,
@@ -269,7 +329,6 @@ inline uint32_t vulkan_acquire_next_image(
     vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, &image_index);
     return image_index;
 }
-
 
 inline void vulkan_queue_submit(const std::vector<VkSubmitInfo>& submit_infos, VkQueue queue, VkFence fence) {
     vulkan_assert(vkQueueSubmit(queue, submit_infos.size(), submit_infos.data(), fence), "Failed to submit to queue.");

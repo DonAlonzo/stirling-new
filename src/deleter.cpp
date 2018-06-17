@@ -2,15 +2,15 @@
 
 ReferenceCounter::operator size_t() {
     std::unique_lock<std::mutex> lock{mutex};
-    return references;
+    return count;
 }
 
 size_t ReferenceCounter::operator++() {
     std::unique_lock<std::mutex> lock{mutex};
-    ++references;
+    return ++count;
 }
 
 size_t ReferenceCounter::operator--() {
     std::unique_lock<std::mutex> lock{mutex};
-    --references;
+    return --count;
 }
