@@ -216,6 +216,18 @@ inline Deleter<VkSemaphore> vulkan_create_semaphore(VkDevice device) {
     }, device);
 }
 
+inline std::vector<Deleter<VkSemaphore>> vulkan_create_semaphores(VkDevice device, size_t count) {
+    std::vector<Deleter<VkSemaphore>> semaphores{count};
+    for (size_t i = 0; i < count; ++i) {
+        semaphores[i] = vulkan_create_semaphore({
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0
+        }, device);
+    }
+    return semaphores;
+}
+
 inline Deleter<VkCommandPool> vulkan_create_command_pool(const VkCommandPoolCreateInfo& create_info, VkDevice device) {
     return vulkan_create<VkCommandPool>(
         vkCreateCommandPool,

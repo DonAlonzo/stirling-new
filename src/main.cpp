@@ -592,15 +592,17 @@ int main() {
         }
 
         // Create semaphores
-        const auto image_available_semaphore = vulkan_create_semaphore(device);
-        const auto render_finished_semaphore = vulkan_create_semaphore(device);
+        constexpr auto max_frames_in_flight = 2;
+        const auto image_available_semaphores = vulkan_create_semaphores(device, max_frames_in_flight);
+        const auto render_finished_semaphores = vulkan_create_semaphores(device, max_frames_in_flight);
 
         // Loop
+        size_t current_frame = 0;
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
             // Get next image from swapchain
-            const auto image_index = vulkan_acquire_next_image(device, swapchain, image_available_semaphore);
+            const auto image_index = vulkan_acquire_next_image(device, swapchain, image_available_semaphores[current_frame]);
             
             // Submit command buffer to graphics queue
             vulkan_queue_submit({
@@ -611,7 +613,7 @@ int main() {
                     // Wait semaphores
                     .waitSemaphoreCount = 1,
                     .pWaitSemaphores    = std::vector<VkSemaphore>{
-                        image_available_semaphore
+                        image_available_semaphores[current_frame]
                     }.data(),
                     .pWaitDstStageMask  = std::vector<VkPipelineStageFlags>{
                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -624,7 +626,7 @@ int main() {
                     // Signal semaphores
                     .signalSemaphoreCount = 1,
                     .pSignalSemaphores    = std::vector<VkSemaphore>{
-                        render_finished_semaphore
+                        render_finished_semaphores[current_frame]
                     }.data()
                 }
             }, graphics_queue, VK_NULL_HANDLE);
@@ -637,7 +639,7 @@ int main() {
                 // Wait semaphores
                 .waitSemaphoreCount = 1,
                 .pWaitSemaphores    = std::vector<VkSemaphore>{
-                    render_finished_semaphore
+                    render_finished_semaphores[current_frame]
                 }.data(),
 
                 // Swapchains
@@ -652,6 +654,12 @@ int main() {
                 // Results
                 .pResults = nullptr
             }, present_queue);
+
+            // Wait until queue is idle
+            vkQueueWaitIdle(present_queue);
+
+            // Advance to next frame
+            current_frame = (current_frame + 1) % max_frames_in_flight;
         }
 
         // Wait until device is idle
