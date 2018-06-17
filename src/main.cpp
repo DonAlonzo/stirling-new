@@ -93,24 +93,6 @@ int main() {
 
         // Get queue families on physical device
         const auto queue_families = vulkan_get_queue_families(physical_device, surface);
-        const auto queue_create_info = [&queue_families]() {
-            std::vector<VkDeviceQueueCreateInfo> create_infos;
-            for (const auto queue_family : std::set<uint32_t>{queue_families.graphics_queue, queue_families.present_queue}) {
-                create_infos.push_back({
-                    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
-                    // Queue info
-                    .queueFamilyIndex = queue_families.graphics_queue,
-                    .queueCount       = 1,
-                    .pQueuePriorities = std::vector<float>{
-                        1.0f
-                    }.data()
-                });
-            }
-            return create_infos;
-        }();
 
         // Create device
         const auto device = vulkan_create_device({
@@ -119,8 +101,30 @@ int main() {
             .flags = 0,
 
             // Queues
-            .queueCreateInfoCount = queue_create_info.size(),
-            .pQueueCreateInfos    = queue_create_info.data(),
+            .queueCreateInfoCount = [&queue_families]() {
+                return std::set<uint32_t>{queue_families.graphics_queue, queue_families.present_queue}.size();
+            }(),
+            .pQueueCreateInfos = [&queue_families]() {
+                std::vector<VkDeviceQueueCreateInfo> create_infos;
+                for (const auto queue_family : std::set<uint32_t>{
+                    queue_families.graphics_queue,
+                    queue_families.present_queue
+                }) {
+                    create_infos.push_back({
+                        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                        .pNext = nullptr,
+                        .flags = 0,
+
+                        // Queue info
+                        .queueFamilyIndex = queue_families.graphics_queue,
+                        .queueCount       = 1,
+                        .pQueuePriorities = std::vector<float>{
+                            1.0f
+                        }.data()
+                    });
+                }
+                return create_infos;
+            }().data(),
 
             // Enabled layers
             .enabledLayerCount   = 0,
