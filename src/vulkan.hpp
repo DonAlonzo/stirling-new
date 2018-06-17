@@ -13,6 +13,11 @@ private:
     T t;
 };
 
+struct QueueFamilyIndices {
+    uint32_t graphics_queue = -1;
+    uint32_t present_queue = -1;
+};
+
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
     case VK_SUCCESS: return;
@@ -167,6 +172,22 @@ inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
     return pipelines;
 }
 
+inline Deleter<VkPipeline> vulkan_create_pipeline(
+    const VkGraphicsPipelineCreateInfo& create_info,
+    VkPipelineCache                     pipeline_cache,
+    VkDevice                            device) {
+
+    return vulkan_create<VkPipeline>(
+        vkCreateGraphicsPipelines,
+        vkDestroyPipeline,
+        device,
+        "Failed to create pipeline.",
+        pipeline_cache,
+        1,
+        &create_info
+    );
+}
+
 inline Deleter<VkFramebuffer> vulkan_create_framebuffer(const VkFramebufferCreateInfo& create_info, VkDevice device) {
     return vulkan_create<VkFramebuffer>(
         vkCreateFramebuffer,
@@ -263,15 +284,16 @@ inline std::vector<VkPhysicalDevice> vulkan_get_physical_devices(VkInstance inst
     return physical_devices;
 }
 
-inline std::vector<VkQueueFamilyProperties> vulkan_get_queue_families(VkPhysicalDevice physical_device) {
-    // Get number of queue families on physical device
-    uint32_t queue_family_count;
-    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
+inline VkPhysicalDeviceProperties vulkan_get_physical_device_properties(VkPhysicalDevice physical_device) {
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physical_device, &properties);
+    return properties;
+}
 
-    // Get queue families on physical device
-    std::vector<VkQueueFamilyProperties> queue_families{queue_family_count};
-    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_families.data());
-    return queue_families;
+inline VkPhysicalDeviceFeatures vulkan_get_physical_device_features(VkPhysicalDevice physical_device) {
+    VkPhysicalDeviceFeatures features;
+    vkGetPhysicalDeviceFeatures(physical_device, &features);
+    return features;
 }
 
 inline VkBool32 vulkan_get_surface_present_support(VkPhysicalDevice physical_device, uint32_t queue_family_index, VkSurfaceKHR surface) {
@@ -336,6 +358,42 @@ inline VkExtent2D vulkan_get_surface_extent(VkSurfaceCapabilitiesKHR surface_cap
         surface_extent.height = std::max(surface_capabilities.minImageExtent.height, std::min(surface_capabilities.maxImageExtent.height, height));
     }
     return surface_extent;
+}
+
+inline std::vector<VkQueueFamilyProperties> vulkan_get_queue_family_properties(VkPhysicalDevice physical_device) {
+    // Get number of queue families on physical device
+    uint32_t queue_family_property_count;
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_property_count, nullptr);
+
+    // Get queue families on physical device
+    std::vector<VkQueueFamilyProperties> queue_family_properties{queue_family_property_count};
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_property_count, queue_family_properties.data());
+    return queue_family_properties;
+}
+
+inline QueueFamilyIndices vulkan_get_queue_families(VkPhysicalDevice physical_device, VkSurfaceKHR surface) {
+    const auto queue_family_properties = vulkan_get_queue_family_properties(physical_device);
+
+    // Find queue family indices
+    QueueFamilyIndices queue_family_indices;
+    for (uint32_t i = 0; i < queue_family_properties.size(); ++i) {
+        if (queue_family_properties[i].queueCount > 0) {
+            // Check if graphics queue
+            if (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                queue_family_indices.graphics_queue = i;
+            }
+
+            // Check if present queue
+            if (vulkan_get_surface_present_support(physical_device, i, surface)) {
+                queue_family_indices.present_queue = i;
+            }
+        }
+    }
+    if (queue_family_indices.graphics_queue == -1 || queue_family_indices.present_queue == -1) {
+        throw "Failed to find all queue families.";
+    }
+
+    return queue_family_indices;
 }
 
 inline std::vector<VkImage> vulkan_get_swapchain_images(VkDevice device, VkSwapchainKHR swapchain) {

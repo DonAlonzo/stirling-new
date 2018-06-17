@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <vector>
 
 int main() {
@@ -21,7 +22,6 @@ int main() {
 
         // Set enabled extensions
         auto enabled_extensions = window.get_required_instance_extensions();
-        //enabled_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);    
         enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
         // Create instance
@@ -80,37 +80,37 @@ int main() {
         // Create window surface
         const auto surface = vulkan_create_surface(instance, window);
 
-        // Get physical devices
-        const auto physical_devices = vulkan_get_physical_devices(instance);
+        // Pick physical device
+        const auto physical_device = [instance]() {
+            for (const auto& physical_device : vulkan_get_physical_devices(instance)) {
+                const auto properties = vulkan_get_physical_device_properties(physical_device);
+                const auto features = vulkan_get_physical_device_features(physical_device);
 
-        // Just pick the first physical device god damn it
-        const auto physical_device = physical_devices[0];
+                return physical_device;
+            }
+            throw "Failed to find a suitable GPU.";
+        }();
 
         // Get queue families on physical device
-        const auto queue_families = vulkan_get_queue_families(physical_device);
+        const auto queue_families = vulkan_get_queue_families(physical_device, surface);
+        const auto queue_create_info = [&queue_families]() {
+            std::vector<VkDeviceQueueCreateInfo> create_infos;
+            for (const auto queue_family : std::set<uint32_t>{queue_families.graphics_queue, queue_families.present_queue}) {
+                create_infos.push_back({
+                    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                    .pNext = nullptr,
+                    .flags = 0,
 
-        // Find queue family indices
-        uint32_t graphics_queue_family_index = -1;
-        uint32_t present_queue_family_index = -1;
-        for (uint32_t i = 0; i < queue_families.size(); ++i) {
-            if (queue_families[i].queueCount > 0) {
-                // Check if graphics queue
-                if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                    graphics_queue_family_index = i;
-                }
-
-                // Check if present queue
-                if (vulkan_get_surface_present_support(physical_device, i, surface)) {
-                    present_queue_family_index = i;
-                }
+                    // Queue info
+                    .queueFamilyIndex = queue_families.graphics_queue,
+                    .queueCount       = 1,
+                    .pQueuePriorities = std::vector<float>{
+                        1.0f
+                    }.data()
+                });
             }
-        }
-        if (graphics_queue_family_index == -1 || present_queue_family_index == -1) {
-            throw "Failed to find all queue families.";
-        }
-
-        // Prioritize queue families
-        const float queue_priorities[] = { 1.0f };
+            return create_infos;
+        }();
 
         // Create device
         const auto device = vulkan_create_device({
@@ -119,35 +119,18 @@ int main() {
             .flags = 0,
 
             // Queues
-            .queueCreateInfoCount = 2,
-            .pQueueCreateInfos    = std::vector<VkDeviceQueueCreateInfo> {
-                // Graphics queue
-                {
-                    .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                    .pNext            = nullptr,
-                    .flags            = 0,
-                    .queueFamilyIndex = graphics_queue_family_index,
-                    .queueCount       = 1,
-                    .pQueuePriorities = queue_priorities
-                },
-                // Present queue
-                {
-                    .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                    .pNext            = nullptr,
-                    .flags            = 0,
-                    .queueFamilyIndex = present_queue_family_index,
-                    .queueCount       = 1,
-                    .pQueuePriorities = queue_priorities
-                }
-            }.data(),
+            .queueCreateInfoCount = queue_create_info.size(),
+            .pQueueCreateInfos    = queue_create_info.data(),
 
             // Enabled layers
             .enabledLayerCount   = 0,
             .ppEnabledLayerNames = nullptr,
 
             // Enabled extensions
-            .enabledExtensionCount   = 0,
-            .ppEnabledExtensionNames = nullptr,
+            .enabledExtensionCount   = 1,
+            .ppEnabledExtensionNames = std::vector<const char*>{
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME    
+            }.data(),
 
             // Enabled features
             .pEnabledFeatures = std::vector<VkPhysicalDeviceFeatures>{{
@@ -155,8 +138,8 @@ int main() {
         }, physical_device);
 
         // Retrieve queue handles
-        const auto graphics_queue = vulkan_get_queue(device, graphics_queue_family_index, 0);
-        const auto present_queue = vulkan_get_queue(device, present_queue_family_index, 0);
+        const auto graphics_queue = vulkan_get_queue(device, queue_families.graphics_queue, 0);
+        const auto present_queue = vulkan_get_queue(device, queue_families.present_queue, 0);
         
         // Get supported surface formats
         const auto surface_formats = vulkan_get_surface_formats(physical_device, surface);
@@ -188,12 +171,27 @@ int main() {
             return surface_formats[0];
         }();
 
+        // Get swap present mode
+        const auto present_mode = [&present_modes]() {
+            auto present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
+            for (const auto& available_present_mode : present_modes) {
+                if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                    return available_present_mode;
+                } else if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+                    present_mode = available_present_mode;
+                }
+            }
+
+            return present_mode;
+        }();
+
         // Get swap surface extent
         const auto surface_extent = vulkan_get_surface_extent(surface_capabilities, width, height);
 
         // Create swapchain
-        const uint32_t queue_family_indices[] = { graphics_queue_family_index, present_queue_family_index };
-        const bool concurrent = graphics_queue_family_index != present_queue_family_index;
+        const uint32_t queue_family_indices[] = { queue_families.graphics_queue, queue_families.present_queue };
+        const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
         const auto swapchain = vulkan_create_swapchain({
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext = nullptr,
@@ -201,14 +199,24 @@ int main() {
 
             .surface               = surface,
             .minImageCount         = swap_image_count,
+
+            // Image properties
             .imageFormat           = surface_format.format,
             .imageColorSpace       = surface_format.colorSpace,
             .imageExtent           = surface_extent,
             .imageArrayLayers      = 1,
             .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .imageSharingMode      = concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
+
+            // Queue families
             .queueFamilyIndexCount = concurrent ? 2 : 0,
             .pQueueFamilyIndices   = concurrent ? queue_family_indices : nullptr,
+            
+            .preTransform          = surface_capabilities.currentTransform,
+            .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode           = present_mode,
+            .clipped               = VK_TRUE,
+            .oldSwapchain          = VK_NULL_HANDLE
         }, device);
 
         // Get swapchain images
@@ -330,171 +338,168 @@ int main() {
         }, device);
 
         // Create pipelines
-        const auto pipeline = vulkan_create_pipelines({
-            // Pipeline 1
-            {
-                .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        const auto pipeline = vulkan_create_pipeline({
+            .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+
+            // Stages
+            .stageCount = 2,
+            .pStages    = std::vector<VkPipelineShaderStageCreateInfo>{
+                // Vertex shader stage
+                {
+                    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    .pNext = nullptr,
+                    .flags = 0,
+
+                    .stage               = VK_SHADER_STAGE_VERTEX_BIT,
+                    .module              = vulkan_create_shader_module("vert.spv", device),
+                    .pName               = "main",
+                    .pSpecializationInfo = nullptr
+                },
+                // Fragment shader stage
+                {
+                    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    .pNext = nullptr,
+                    .flags = 0,
+
+                    .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .module              = vulkan_create_shader_module("frag.spv", device),
+                    .pName               = "main",
+                    .pSpecializationInfo = nullptr
+                }
+            }.data(),
+
+            // Vertex input
+            .pVertexInputState = Pointer<VkPipelineVertexInputStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
 
-                // Stages
-                .stageCount = 2,
-                .pStages    = std::vector<VkPipelineShaderStageCreateInfo>{
-                    // Vertex shader stage
-                    {
-                        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                        .pNext = nullptr,
-                        .flags = 0,
+                // Vertex binding descriptions
+                .vertexBindingDescriptionCount = 0,
+                .pVertexBindingDescriptions    = nullptr,
 
-                        .stage               = VK_SHADER_STAGE_VERTEX_BIT,
-                        .module              = vulkan_create_shader_module("vert.spv", device),
-                        .pName               = "main",
-                        .pSpecializationInfo = nullptr
-                    },
-                    // Fragment shader stage
-                    {
-                        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                        .pNext = nullptr,
-                        .flags = 0,
+                // Vertex attribute
+                .vertexAttributeDescriptionCount = 0,
+                .pVertexAttributeDescriptions    = nullptr
+            }},
 
-                        .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .module              = vulkan_create_shader_module("frag.spv", device),
-                        .pName               = "main",
-                        .pSpecializationInfo = nullptr
+            // Input assembly
+            .pInputAssemblyState = Pointer<VkPipelineInputAssemblyStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+
+                .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .primitiveRestartEnable = VK_FALSE
+            }},
+
+            // Tessellation
+            .pTessellationState = nullptr,
+
+            // Viewport
+            .pViewportState = Pointer<VkPipelineViewportStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+
+                // Viewports
+                .viewportCount = 1,
+                .pViewports    = std::vector<VkViewport>{
+                    {
+                        .x        = 0.0f,
+                        .y        = 0.0f,
+                        .width    = static_cast<float>(surface_extent.width),
+                        .height   = static_cast<float>(surface_extent.height),
+                        .minDepth = 0.0f,
+                        .maxDepth = 1.0f
                     }
                 }.data(),
 
-                // Vertex input
-                .pVertexInputState = Pointer<VkPipelineVertexInputStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
+                // Scissors
+                .scissorCount = 1,
+                .pScissors    = std::vector<VkRect2D>{
+                    {
+                        .offset = { 0, 0 },
+                        .extent = surface_extent
+                    }
+                }.data()
+            }},
 
-                    // Vertex binding descriptions
-                    .vertexBindingDescriptionCount = 0,
-                    .pVertexBindingDescriptions    = nullptr,
+            // Rasterization
+            .pRasterizationState = Pointer<VkPipelineRasterizationStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
 
-                    // Vertex attribute
-                    .vertexAttributeDescriptionCount = 0,
-                    .pVertexAttributeDescriptions    = nullptr
-                }},
+                .depthClampEnable        = VK_FALSE,
+                .rasterizerDiscardEnable = VK_FALSE,
+                .polygonMode             = VK_POLYGON_MODE_FILL,
+                .cullMode                = VK_CULL_MODE_BACK_BIT,
+                .frontFace               = VK_FRONT_FACE_CLOCKWISE,
+                .depthBiasEnable         = VK_FALSE,
+                .depthBiasConstantFactor = 0.0f,
+                .depthBiasClamp          = 0.0f,
+                .depthBiasSlopeFactor    = 0.0f,
+                .lineWidth               = 1.0f
+            }},
 
-                // Input assembly
-                .pInputAssemblyState = Pointer<VkPipelineInputAssemblyStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
+            // Multisampler
+            .pMultisampleState = Pointer<VkPipelineMultisampleStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
 
-                    .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                    .primitiveRestartEnable = VK_FALSE
-                }},
+                .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
+                .sampleShadingEnable   = VK_FALSE,
+                .minSampleShading      = 1.0f,
+                .pSampleMask           = nullptr,
+                .alphaToCoverageEnable = VK_FALSE,
+                .alphaToOneEnable      = VK_FALSE
+            }},
 
-                // Tessellation
-                .pTessellationState = nullptr,
+            // Depth stencil
+            .pDepthStencilState = nullptr,
 
-                // Viewport
-                .pViewportState = Pointer<VkPipelineViewportStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
+            // Color blending
+            .pColorBlendState = Pointer<VkPipelineColorBlendStateCreateInfo>{{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
 
-                    // Viewports
-                    .viewportCount = 1,
-                    .pViewports    = std::vector<VkViewport>{
-                        {
-                            .x        = 0.0f,
-                            .y        = 0.0f,
-                            .width    = static_cast<float>(surface_extent.width),
-                            .height   = static_cast<float>(surface_extent.height),
-                            .minDepth = 0.0f,
-                            .maxDepth = 1.0f
-                        }
-                    }.data(),
+                .logicOpEnable = VK_FALSE,
+                .logicOp       = VK_LOGIC_OP_COPY,
 
-                    // Scissors
-                    .scissorCount = 1,
-                    .pScissors    = std::vector<VkRect2D>{
-                        {
-                            .offset = { 0, 0 },
-                            .extent = surface_extent
-                        }
-                    }.data()
-                }},
+                // Attachments
+                .attachmentCount = 1,
+                .pAttachments    = std::vector<VkPipelineColorBlendAttachmentState>{{
+                    .blendEnable         = VK_FALSE,
+                    .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                    .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                    .colorBlendOp        = VK_BLEND_OP_ADD,
+                    .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                    .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                    .alphaBlendOp        = VK_BLEND_OP_ADD,
+                    .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
+                                         | VK_COLOR_COMPONENT_G_BIT
+                                         | VK_COLOR_COMPONENT_B_BIT
+                                         | VK_COLOR_COMPONENT_A_BIT
+                }}.data(),
 
-                // Rasterization
-                .pRasterizationState = Pointer<VkPipelineRasterizationStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
+                // Blend constants
+                .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f }
+            }},
 
-                    .depthClampEnable        = VK_FALSE,
-                    .rasterizerDiscardEnable = VK_FALSE,
-                    .polygonMode             = VK_POLYGON_MODE_FILL,
-                    .cullMode                = VK_CULL_MODE_BACK_BIT,
-                    .frontFace               = VK_FRONT_FACE_CLOCKWISE,
-                    .depthBiasEnable         = VK_FALSE,
-                    .depthBiasConstantFactor = 0.0f,
-                    .depthBiasClamp          = 0.0f,
-                    .depthBiasSlopeFactor    = 0.0f,
-                    .lineWidth               = 1.0f
-                }},
+            // Dynamic state
+            .pDynamicState = nullptr,
 
-                // Multisampler
-                .pMultisampleState = Pointer<VkPipelineMultisampleStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
-                    .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
-                    .sampleShadingEnable   = VK_FALSE,
-                    .minSampleShading      = 1.0f,
-                    .pSampleMask           = nullptr,
-                    .alphaToCoverageEnable = VK_FALSE,
-                    .alphaToOneEnable      = VK_FALSE
-                }},
-
-                // Depth stencil
-                .pDepthStencilState = nullptr,
-
-                // Color blending
-                .pColorBlendState = Pointer<VkPipelineColorBlendStateCreateInfo>{{
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
-                    .logicOpEnable = VK_FALSE,
-                    .logicOp       = VK_LOGIC_OP_COPY,
-
-                    // Attachments
-                    .attachmentCount = 1,
-                    .pAttachments    = std::vector<VkPipelineColorBlendAttachmentState>{{
-                        .blendEnable         = VK_FALSE,
-                        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                        .colorBlendOp        = VK_BLEND_OP_ADD,
-                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                        .alphaBlendOp        = VK_BLEND_OP_ADD,
-                        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
-                                             | VK_COLOR_COMPONENT_G_BIT
-                                             | VK_COLOR_COMPONENT_B_BIT
-                                             | VK_COLOR_COMPONENT_A_BIT
-                    }}.data(),
-
-                    // Blend constants
-                    .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f }
-                }},
-
-                // Dynamic state
-                .pDynamicState = nullptr,
-
-                .layout             = pipeline_layout,
-                .renderPass         = render_pass,
-                .subpass            = 0,
-                .basePipelineHandle = VK_NULL_HANDLE,
-                .basePipelineIndex  = -1
-            }
-        }, VK_NULL_HANDLE, device)[0];
+            .layout             = pipeline_layout,
+            .renderPass         = render_pass,
+            .subpass            = 0,
+            .basePipelineHandle = VK_NULL_HANDLE,
+            .basePipelineIndex  = -1
+        }, VK_NULL_HANDLE, device);
 
         // Create framebuffers
         std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
@@ -526,7 +531,7 @@ int main() {
             .pNext = nullptr,
             .flags = 0,
 
-            .queueFamilyIndex = graphics_queue_family_index
+            .queueFamilyIndex = queue_families.graphics_queue
         }, device);
 
         // Allocate command buffers
