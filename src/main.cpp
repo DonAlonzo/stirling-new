@@ -12,6 +12,20 @@
 #include <set>
 #include <vector>
 
+VkBool32 debug_callback(
+    const auto flags, 
+    const auto object_type, 
+    const auto object, 
+    const auto location, 
+    const auto code, 
+    const auto layer_prefix, 
+    const auto message, 
+    const auto user_data) {
+
+    std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
+    return VK_FALSE;
+}
+
 int main() {
     try {
         const uint32_t width = 800;
@@ -29,38 +43,20 @@ int main() {
             .application_info = {
                 .application_name    = "Stirling Engine Demo",
                 .application_version = VK_MAKE_VERSION(1, 0, 0),
-
-                .engine_name    = "Stirling Engine",
-                .engine_version = VK_MAKE_VERSION(1, 0, 0),
-
-                .api_version = VK_API_VERSION_1_0
+                .engine_name         = "Stirling Engine",
+                .engine_version      = VK_MAKE_VERSION(1, 0, 0),
+                .api_version         = VK_API_VERSION_1_0
             },
-
             .enabled_layers = {
                 "VK_LAYER_LUNARG_standard_validation"
             },
-
             .enabled_extensions = enabled_extensions
         });
 
         // Create debug report callback
         const auto debug_callback_handle = vulkan_create_debug_report_callback({
             .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
-            
-            .callback = [](
-                const auto flags, 
-                const auto object_type, 
-                const auto object, 
-                const auto location, 
-                const auto code, 
-                const auto layer_prefix, 
-                const auto message, 
-                const auto user_data) -> VkBool32 {
-
-                std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
-                return VK_FALSE;
-            },
-
+            .callback = debug_callback,
             .user_data = nullptr
         }, instance);
 
@@ -83,49 +79,25 @@ int main() {
 
         // Create device
         const auto device = vulkan_create_device({
-            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-
-            // Queues
-            .queueCreateInfoCount = [&queue_families]() {
-                // Only one queue per unique queue family index
-                return std::set<uint32_t>{queue_families.graphics_queue, queue_families.present_queue}.size();
-            }(),
-            .pQueueCreateInfos = [&queue_families, queue_priorities = std::vector<float>{ 1.0f }]() {
-                std::vector<VkDeviceQueueCreateInfo> create_infos;
+            .queues = [&queue_families]() {
+                std::vector<VulkanDeviceQueueCreateInfo> create_infos;
                 // Only one queue per unique queue family index
                 for (const auto queue_family : std::set<uint32_t>{
                     queue_families.graphics_queue,
                     queue_families.present_queue
                 }) {
                     create_infos.push_back({
-                        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                        .pNext = nullptr,
-                        .flags = 0,
-
-                        // Queue info
-                        .queueFamilyIndex = queue_families.graphics_queue,
-                        .queueCount       = 1,
-                        .pQueuePriorities = queue_priorities.data()
+                        .queue_family_index = queue_families.graphics_queue,
+                        .queue_priorities   = { 1.0f }
                     });
                 }
                 return create_infos;
-            }().data(),
-
-            // Enabled layers
-            .enabledLayerCount   = 0,
-            .ppEnabledLayerNames = nullptr,
-
-            // Enabled extensions
-            .enabledExtensionCount   = 1,
-            .ppEnabledExtensionNames = std::vector<const char*>{
+            }(),
+            .enabled_layers = {},
+            .enabled_extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME    
-            }.data(),
-
-            // Enabled features
-            .pEnabledFeatures = std::vector<VkPhysicalDeviceFeatures>{{
-            }}.data()
+            },
+            .enabled_features = {}
         }, physical_device);
 
         // Retrieve queue handles
@@ -181,33 +153,31 @@ int main() {
         const auto surface_extent = vulkan_get_surface_extent(surface_capabilities, width, height);
 
         // Create swapchain
-        const uint32_t queue_family_indices[] = { queue_families.graphics_queue, queue_families.present_queue };
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
         const auto swapchain = vulkan_create_swapchain({
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0,
-
-            .surface       = surface,
-            .minImageCount = swap_image_count,
-
-            // Image properties
-            .imageFormat      = surface_format.format,
-            .imageColorSpace  = surface_format.colorSpace,
-            .imageExtent      = surface_extent,
-            .imageArrayLayers = 1,
-            .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode = concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-
-            // Queue families
-            .queueFamilyIndexCount = concurrent ? 2 : 0,
-            .pQueueFamilyIndices   = concurrent ? queue_family_indices : nullptr,
-            
-            .preTransform   = surface_capabilities.currentTransform,
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode    = present_mode,
-            .clipped        = VK_TRUE,
-            .oldSwapchain   = VK_NULL_HANDLE
+            .surface              = surface,
+            .min_image_count      = swap_image_count,
+            .image_format         = surface_format.format,
+            .image_color_space    = surface_format.colorSpace,
+            .image_extent         = surface_extent,
+            .image_array_layers   = 1,
+            .image_usage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .image_sharing_mode   =
+                concurrent ?
+                    VK_SHARING_MODE_CONCURRENT :
+                    VK_SHARING_MODE_EXCLUSIVE,
+            .queue_family_indices =
+                concurrent ?
+                    std::vector<uint32_t>{
+                        queue_families.graphics_queue,
+                        queue_families.present_queue
+                    } :
+                    std::vector<uint32_t>{},
+            .pre_transform        = surface_capabilities.currentTransform,
+            .composite_alpha      = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .present_mode         = present_mode,
+            .clipped              = VK_TRUE,
+            .old_swapchain        = VK_NULL_HANDLE
         }, device);
 
         // Create swapchain image views
@@ -218,12 +188,8 @@ int main() {
             std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
             for (size_t i = 0; i < swapchain_images.size(); ++i) {
                 swapchain_image_views[i] = vulkan_create_image_view({
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
                     .image      = swapchain_images[i],
-                    .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+                    .view_type  = VK_IMAGE_VIEW_TYPE_2D,
                     .format     = surface_format.format,
                     .components = {
                         .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -231,7 +197,7 @@ int main() {
                         .b = VK_COMPONENT_SWIZZLE_IDENTITY,
                         .a = VK_COMPONENT_SWIZZLE_IDENTITY
                     },
-                    .subresourceRange = {
+                    .subresource_range = {
                         .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
                         .baseMipLevel   = 0,
                         .levelCount     = 1,
@@ -245,58 +211,49 @@ int main() {
 
         // Create render pass
         const auto render_pass = vulkan_create_render_pass({
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
+            .attachments = {
+                {
+                    .flags = 0,
+                    .format         = surface_format.format,
+                    .samples        = VK_SAMPLE_COUNT_1_BIT,
+                    .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+                    .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                    .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                }
+            },
+            .subpasses = {
+                {
+                    .flags = 0,
 
-            // Attachments
-            .attachmentCount = 1,
-            .pAttachments    = std::vector<VkAttachmentDescription>{{
-                .flags = 0,
+                    // Pipeline bind point
+                    .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 
-                .format         = surface_format.format,
-                .samples        = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-                .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-            }}.data(),
+                    // Input attachments
+                    .inputAttachmentCount = 0,
+                    .pInputAttachments    = nullptr,
 
-            // Subpasses
-            .subpassCount = 1,
-            .pSubpasses   = std::vector<VkSubpassDescription>{{
-                .flags = 0,
+                    // Color attachments
+                    .colorAttachmentCount = 1,
+                    .pColorAttachments    = std::vector<VkAttachmentReference>{{
+                        .attachment = 0,
+                        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                    }}.data(),
 
-                // Pipeline bind point
-                .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    // Resolve attachments
+                    .pResolveAttachments = nullptr,
 
-                // Input attachments
-                .inputAttachmentCount = 0,
-                .pInputAttachments    = nullptr,
+                    // Depth stencil attachments
+                    .pDepthStencilAttachment = nullptr,
 
-                // Color attachments
-                .colorAttachmentCount = 1,
-                .pColorAttachments    = std::vector<VkAttachmentReference>{{
-                    .attachment = 0,
-                    .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-                }}.data(),
-
-                // Resolve attachments
-                .pResolveAttachments = nullptr,
-
-                // Depth stencil attachments
-                .pDepthStencilAttachment = nullptr,
-
-                // Preserve attachments
-                .preserveAttachmentCount = 0,
-                .pPreserveAttachments    = nullptr
-            }}.data(),
-
-            // Dependencies
-            .dependencyCount = 1,
-            .pDependencies   = std::vector<VkSubpassDependency>{
+                    // Preserve attachments
+                    .preserveAttachmentCount = 0,
+                    .pPreserveAttachments    = nullptr
+                }
+            },
+            .dependencies = {
                 {
                     // Subpasses
                     .srcSubpass = VK_SUBPASS_EXTERNAL,
@@ -313,7 +270,7 @@ int main() {
                     // Flags
                     .dependencyFlags = 0
                 }
-            }.data()
+            }
         }, device);
 
         // Create pipelines
@@ -504,20 +461,12 @@ int main() {
         std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
         for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
             swapchain_framebuffers[i] = vulkan_create_framebuffer({
-                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
+                .render_pass = render_pass,
 
-                // Render pass
-                .renderPass = render_pass,
-
-                // Attachments
-                .attachmentCount = 1,
-                .pAttachments    = std::vector<VkImageView>{
+                .attachments = {
                     swapchain_image_views[i]
-                }.data(),
+                },
 
-                // Dimensions
                 .width  = surface_extent.width,
                 .height = surface_extent.height,
                 .layers = 1
@@ -526,21 +475,15 @@ int main() {
 
         // Create command pool
         const auto command_pool = vulkan_create_command_pool({
-            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-
-            .queueFamilyIndex = queue_families.graphics_queue
+            .flags              = 0,
+            .queue_family_index = queue_families.graphics_queue
         }, device);
 
         // Allocate command buffers
         const auto command_buffers = vulkan_allocate_command_buffers({
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext = nullptr,
-
-            .commandPool        = command_pool,
-            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = swapchain_framebuffers.size()
+            .command_pool         = command_pool,
+            .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .command_buffer_count = swapchain_framebuffers.size()
         }, device);
 
         // Record command buffers
@@ -607,52 +550,35 @@ int main() {
             // Submit command buffer to graphics queue
             vulkan_queue_submit({
                 {
-                    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                    .pNext = nullptr,
-
-                    // Wait semaphores
-                    .waitSemaphoreCount = 1,
-                    .pWaitSemaphores    = std::vector<VkSemaphore>{
+                    .wait_semaphores = {
                         image_available_semaphores[current_frame]
-                    }.data(),
-                    .pWaitDstStageMask  = std::vector<VkPipelineStageFlags>{
-                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-                    }.data(),
+                    },
 
-                    // Command buffers
-                    .commandBufferCount = 1,
-                    .pCommandBuffers    = &command_buffers[image_index],
+                    .wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 
-                    // Signal semaphores
-                    .signalSemaphoreCount = 1,
-                    .pSignalSemaphores    = std::vector<VkSemaphore>{
+                    .command_buffers = {
+                        command_buffers[image_index]
+                    },
+
+                    .signal_semaphores = {
                         render_finished_semaphores[current_frame]
-                    }.data()
+                    }
                 }
             }, graphics_queue, in_flight_fences[current_frame]);
 
             // Present images
             vulkan_queue_present({
-                .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                .pNext = nullptr,
-
-                // Wait semaphores
-                .waitSemaphoreCount = 1,
-                .pWaitSemaphores    = std::vector<VkSemaphore>{
+                .wait_semaphores = {
                     render_finished_semaphores[current_frame]
-                }.data(),
+                },
 
-                // Swapchains
-                .swapchainCount = 1,
-                .pSwapchains    = std::vector<VkSwapchainKHR>{
+                .swapchains = {
                     swapchain
-                }.data(),
+                },
 
-                // Image indices
-                .pImageIndices = &image_index,
-
-                // Results
-                .pResults = nullptr
+                .image_indices = {
+                    image_index
+                }
             }, present_queue);
 
             // Wait until queue is idle
