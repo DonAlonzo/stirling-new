@@ -213,62 +213,56 @@ int main() {
         const auto render_pass = vulkan_create_render_pass({
             .attachments = {
                 {
-                    .flags = 0,
-                    .format         = surface_format.format,
-                    .samples        = VK_SAMPLE_COUNT_1_BIT,
-                    .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                    .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-                    .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                    .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-                    .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                    .flags            = 0,
+                    .format           = surface_format.format,
+                    .samples          = VK_SAMPLE_COUNT_1_BIT,
+                    .load_op          = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    .store_op         = VK_ATTACHMENT_STORE_OP_STORE,
+                    .stencil_load_op  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                    .stencil_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                    .initial_layout   = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .final_layout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
                 }
             },
             .subpasses = {
                 {
                     .flags = 0,
 
-                    // Pipeline bind point
-                    .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
 
-                    // Input attachments
-                    .inputAttachmentCount = 0,
-                    .pInputAttachments    = nullptr,
+                    .input_attachments = {},
 
                     // Color attachments
-                    .colorAttachmentCount = 1,
-                    .pColorAttachments    = std::vector<VkAttachmentReference>{{
-                        .attachment = 0,
-                        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-                    }}.data(),
+                    .color_attachments = {
+                        {
+                            .attachment = 0,
+                            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                        }
+                    },
 
-                    // Resolve attachments
-                    .pResolveAttachments = nullptr,
+                    .resolve_attachments = {},
 
-                    // Depth stencil attachments
-                    .pDepthStencilAttachment = nullptr,
+                    .depth_stencil_attachment = { VK_ATTACHMENT_UNUSED },
 
-                    // Preserve attachments
-                    .preserveAttachmentCount = 0,
-                    .pPreserveAttachments    = nullptr
+                    .preserve_attachments = {}
                 }
             },
             .dependencies = {
                 {
                     // Subpasses
-                    .srcSubpass = VK_SUBPASS_EXTERNAL,
-                    .dstSubpass = 0,
+                    .src_subpass = VK_SUBPASS_EXTERNAL,
+                    .dst_subpass = 0,
 
                     // Stage masks
-                    .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .src_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 
                     // Access masks
-                    .srcAccessMask = 0,
-                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .src_access_mask = 0,
+                    .dst_access_mask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 
                     // Flags
-                    .dependencyFlags = 0
+                    .dependency_flags = 0
                 }
             }
         }, device);
@@ -490,28 +484,19 @@ int main() {
         for (size_t i = 0; i < command_buffers.size(); ++i) {
             // Begin command buffer
             vulkan_begin_command_buffer({
-                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                .pNext = nullptr,
-                .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-                
-                .pInheritanceInfo = nullptr
+                .flags            = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+                .inheritance_info = {}
             }, command_buffers[i]);
 
             // Begin render pass
             vulkan_begin_render_pass({
-                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .pNext = nullptr,
-
-                .renderPass  = render_pass,
-                .framebuffer = swapchain_framebuffers[i],
-                .renderArea = {
+                .render_pass  = render_pass,
+                .framebuffer  = swapchain_framebuffers[i],
+                .render_area  = {
                     .offset = { 0, 0 },
                     .extent = surface_extent
                 },
-
-                // Clear values
-                .clearValueCount = 1,
-                .pClearValues    = Wrapper<VkClearValue>{
+                .clear_values = {
                     { 0.0f, 0.0f, 0.0f, 1.0f }
                 }
             }, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);

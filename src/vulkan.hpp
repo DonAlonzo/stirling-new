@@ -15,7 +15,7 @@ private:
 };
 
 template<typename T, typename F>
-std::vector<T> vector_cast(const std::vector<F>& from) {
+std::vector<T> cast_vector(const std::vector<F>& from) {
     return std::vector<T>{from.begin(), from.end()};
 }
 
@@ -116,7 +116,7 @@ struct VulkanDeviceCreateInfo {
             .pNext                   = nullptr,
             .flags                   = 0,
             .queueCreateInfoCount    = queues.size(),
-            .pQueueCreateInfos       = vector_cast<const VkDeviceQueueCreateInfo*>(queues)[0],
+            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
             .enabledLayerCount       = enabled_layers.size(),
             .ppEnabledLayerNames     = enabled_layers.data(),
             .enabledExtensionCount   = enabled_extensions.size(),
@@ -192,10 +192,90 @@ struct VulkanImageViewCreateInfo {
     }
 };
 
+struct VulkanAttachmentDescription {
+    VkAttachmentDescriptionFlags flags;
+    VkFormat                     format;
+    VkSampleCountFlagBits        samples;
+    VkAttachmentLoadOp           load_op;
+    VkAttachmentStoreOp          store_op;
+    VkAttachmentLoadOp           stencil_load_op;
+    VkAttachmentStoreOp          stencil_store_op;
+    VkImageLayout                initial_layout;
+    VkImageLayout                final_layout;
+
+    operator const VkAttachmentDescription*() const {
+        static VkAttachmentDescription description;
+        description = {
+            .flags          = flags,
+            .format         = format,
+            .samples        = samples,
+            .loadOp         = load_op,
+            .storeOp        = store_op,
+            .stencilLoadOp  = stencil_load_op,
+            .stencilStoreOp = stencil_store_op,
+            .initialLayout  = initial_layout,
+            .finalLayout    = final_layout
+        };
+        return &description;
+    }
+};
+
+struct VulkanSubpassDescription {
+    VkSubpassDescriptionFlags          flags;
+    VkPipelineBindPoint                pipeline_bind_point;
+    std::vector<VkAttachmentReference> input_attachments;
+    std::vector<VkAttachmentReference> color_attachments;
+    std::vector<VkAttachmentReference> resolve_attachments;
+    VkAttachmentReference              depth_stencil_attachment;
+    std::vector<uint32_t>              preserve_attachments;
+
+    operator const VkSubpassDescription*() const {
+        static VkSubpassDescription description;
+        description = {
+            .flags                   = flags,
+            .pipelineBindPoint       = pipeline_bind_point,
+            .inputAttachmentCount    = input_attachments.size(),
+            .pInputAttachments       = input_attachments.data(),
+            .colorAttachmentCount    = color_attachments.size(),
+            .pColorAttachments       = color_attachments.data(),
+            .pResolveAttachments     = resolve_attachments.data(),
+            .pDepthStencilAttachment = &depth_stencil_attachment,
+            .preserveAttachmentCount = preserve_attachments.size(),
+            .pPreserveAttachments    = preserve_attachments.data()
+        };
+        return &description;
+    }
+};
+
+struct VulkanSubpassDependency {
+    uint32_t             src_subpass;
+    uint32_t             dst_subpass;
+    VkPipelineStageFlags src_stage_mask;
+    VkPipelineStageFlags dst_stage_mask;
+    VkAccessFlags        src_access_mask;
+    VkAccessFlags        dst_access_mask;
+    VkDependencyFlags    dependency_flags;
+
+    operator const VkSubpassDependency*() const {
+        static VkSubpassDependency description;
+        description = {
+            .srcSubpass      = src_subpass,
+            .dstSubpass      = dst_subpass,
+            .srcStageMask    = src_stage_mask,
+            .dstStageMask    = dst_stage_mask,
+            .srcAccessMask   = src_access_mask,
+            .dstAccessMask   = dst_access_mask,
+            .dependencyFlags = dependency_flags
+        };
+        return &description;
+    }
+};
+
+
 struct VulkanRenderPassCreateInfo {
-    std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkSubpassDescription>    subpasses;
-    std::vector<VkSubpassDependency>     dependencies;
+    std::vector<VulkanAttachmentDescription> attachments;
+    std::vector<VulkanSubpassDescription>    subpasses;
+    std::vector<VulkanSubpassDependency>     dependencies;
     
     operator const VkRenderPassCreateInfo*() const {
         static VkRenderPassCreateInfo create_info;
@@ -204,11 +284,11 @@ struct VulkanRenderPassCreateInfo {
             .pNext           = nullptr,
             .flags           = 0,
             .attachmentCount = attachments.size(),
-            .pAttachments    = attachments.data(),
+            .pAttachments    = cast_vector<const VkAttachmentDescription*>(attachments)[0],
             .subpassCount    = subpasses.size(),
-            .pSubpasses      = subpasses.data(),
+            .pSubpasses      = cast_vector<const VkSubpassDescription*>(subpasses)[0],
             .dependencyCount = dependencies.size(),
-            .pDependencies   = dependencies.data()
+            .pDependencies   = cast_vector<const VkSubpassDependency*>(dependencies)[0]
         };
         return &create_info;
     }
@@ -269,6 +349,67 @@ struct VulkanCommandBufferAllocateInfo {
             .commandBufferCount = command_buffer_count
         };
         return &create_info;
+    }
+};
+
+struct VulkanRenderPassBeginInfo {
+    VkRenderPass              render_pass;
+    VkFramebuffer             framebuffer;
+    VkRect2D                  render_area;
+    std::vector<VkClearValue> clear_values;
+
+    operator const VkRenderPassBeginInfo*() const {
+        static VkRenderPassBeginInfo begin_info;
+        begin_info = {
+            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .pNext           = nullptr,
+            .renderPass      = render_pass,
+            .framebuffer     = framebuffer,
+            .renderArea      = render_area,
+            .clearValueCount = clear_values.size(),
+            .pClearValues    = clear_values.data()
+        };
+        return &begin_info;
+    }
+};
+
+struct VulkanCommandBufferInheritanceInfo {
+    VkRenderPass                   render_pass;
+    uint32_t                       subpass;
+    VkFramebuffer                  framebuffer;
+    VkBool32                       occlusion_query_enable;
+    VkQueryControlFlags            query_flags;
+    VkQueryPipelineStatisticFlags  pipeline_statistics;
+
+    operator const VkCommandBufferInheritanceInfo*() const {
+        static VkCommandBufferInheritanceInfo inheritance_info;
+        inheritance_info = {
+            .sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+            .pNext                = nullptr,
+            .renderPass           = render_pass,
+            .subpass              = subpass,
+            .framebuffer          = framebuffer,
+            .occlusionQueryEnable = occlusion_query_enable,
+            .queryFlags           = query_flags,
+            .pipelineStatistics   = pipeline_statistics
+        };
+        return &inheritance_info;
+    }
+};
+
+struct VulkanCommandBufferBeginInfo {
+    VkCommandBufferUsageFlags          flags;
+    VulkanCommandBufferInheritanceInfo inheritance_info;
+
+    operator const VkCommandBufferBeginInfo*() const {
+        static VkCommandBufferBeginInfo begin_info;
+        begin_info = {
+            .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext            = nullptr,
+            .flags            = flags,
+            .pInheritanceInfo = inheritance_info
+        };
+        return &begin_info;
     }
 };
 
@@ -571,15 +712,15 @@ inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(const Vulkan
     return command_buffers;
 }
 
-inline void vulkan_begin_command_buffer(const VkCommandBufferBeginInfo& begin_info, VkCommandBuffer command_buffer) {
+inline void vulkan_begin_command_buffer(const VulkanCommandBufferBeginInfo& begin_info, VkCommandBuffer command_buffer) {
     vulkan_assert(
-        vkBeginCommandBuffer(command_buffer, &begin_info),
+        vkBeginCommandBuffer(command_buffer, begin_info),
         "Failed to begin command buffer."
     );
 }
 
-inline void vulkan_begin_render_pass(const VkRenderPassBeginInfo& begin_info, VkCommandBuffer command_buffer, VkSubpassContents contents) {
-    vkCmdBeginRenderPass(command_buffer, &begin_info, contents);
+inline void vulkan_begin_render_pass(const VulkanRenderPassBeginInfo& begin_info, VkCommandBuffer command_buffer, VkSubpassContents contents) {
+    vkCmdBeginRenderPass(command_buffer, begin_info, contents);
 }
 
 inline void vulkan_wait_for_fence(
@@ -637,7 +778,7 @@ inline void vulkan_queue_submit(const std::vector<VulkanSubmitInfo>& submit_info
         vkQueueSubmit(
             queue,
             submit_infos.size(),
-            vector_cast<const VkSubmitInfo*>(submit_infos)[0],
+            cast_vector<const VkSubmitInfo*>(submit_infos)[0],
             fence
         ),
         "Failed to submit to queue."
