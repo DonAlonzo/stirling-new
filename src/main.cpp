@@ -26,40 +26,28 @@ int main() {
 
         // Create instance
         const auto instance = vulkan_create_instance({
-            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
+            .application_info = {
+                .application_name    = "Stirling Engine Demo",
+                .application_version = VK_MAKE_VERSION(1, 0, 0),
 
-            // Application info
-            .pApplicationInfo = Pointer<VkApplicationInfo>{{
-                .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-                .pNext              = nullptr,
-                .pApplicationName   = "Stirling Engine Demo",
-                .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-                .pEngineName        = "Stirling Engine",
-                .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-                .apiVersion         = VK_API_VERSION_1_0
-            }},
+                .engine_name    = "Stirling Engine",
+                .engine_version = VK_MAKE_VERSION(1, 0, 0),
 
-            // Enabled layers
-            .enabledLayerCount   = 1,
-            .ppEnabledLayerNames = std::vector<const char*>{
+                .api_version = VK_API_VERSION_1_0
+            },
+
+            .enabled_layers = {
                 "VK_LAYER_LUNARG_standard_validation"
-            }.data(),
+            },
 
-            // Enabled extensions
-            .enabledExtensionCount   = enabled_extensions.size(),
-            .ppEnabledExtensionNames = enabled_extensions.data()
+            .enabled_extensions = enabled_extensions
         });
 
         // Create debug report callback
         const auto debug_callback_handle = vulkan_create_debug_report_callback({
-            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-            .pNext = nullptr,
             .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
-
-            // Callback
-            .pfnCallback = [](
+            
+            .callback = [](
                 const auto flags, 
                 const auto object_type, 
                 const auto object, 
@@ -73,8 +61,7 @@ int main() {
                 return VK_FALSE;
             },
 
-            // User data
-            .pUserData = nullptr
+            .user_data = nullptr
         }, instance);
 
         // Create window surface
@@ -363,7 +350,7 @@ int main() {
             }.data(),
 
             // Vertex input
-            .pVertexInputState = Pointer<VkPipelineVertexInputStateCreateInfo>{{
+            .pVertexInputState = Wrapper<VkPipelineVertexInputStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -378,7 +365,7 @@ int main() {
             }},
 
             // Input assembly
-            .pInputAssemblyState = Pointer<VkPipelineInputAssemblyStateCreateInfo>{{
+            .pInputAssemblyState = Wrapper<VkPipelineInputAssemblyStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -391,7 +378,7 @@ int main() {
             .pTessellationState = nullptr,
 
             // Viewport
-            .pViewportState = Pointer<VkPipelineViewportStateCreateInfo>{{
+            .pViewportState = Wrapper<VkPipelineViewportStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -420,7 +407,7 @@ int main() {
             }},
 
             // Rasterization
-            .pRasterizationState = Pointer<VkPipelineRasterizationStateCreateInfo>{{
+            .pRasterizationState = Wrapper<VkPipelineRasterizationStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -438,7 +425,7 @@ int main() {
             }},
 
             // Multisampler
-            .pMultisampleState = Pointer<VkPipelineMultisampleStateCreateInfo>{{
+            .pMultisampleState = Wrapper<VkPipelineMultisampleStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -455,7 +442,7 @@ int main() {
             .pDepthStencilState = nullptr,
 
             // Color blending
-            .pColorBlendState = Pointer<VkPipelineColorBlendStateCreateInfo>{{
+            .pColorBlendState = Wrapper<VkPipelineColorBlendStateCreateInfo>{{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0,
@@ -581,7 +568,7 @@ int main() {
 
                 // Clear values
                 .clearValueCount = 1,
-                .pClearValues    = Pointer<VkClearValue>{
+                .pClearValues    = Wrapper<VkClearValue>{
                     { 0.0f, 0.0f, 0.0f, 1.0f }
                 }
             }, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);

@@ -6,9 +6,9 @@
 #include <vector>
 
 template<typename T>
-struct Pointer {
-    Pointer(T t) : t (t) {}
-    operator T*() { return &t; }
+struct Wrapper {
+    Wrapper(T t) : t (t) {}
+    operator const T*() { return &t; }
 private:
     T t;
 };
@@ -16,6 +16,67 @@ private:
 struct QueueFamilyIndices {
     uint32_t graphics_queue = -1;
     uint32_t present_queue = -1;
+};
+
+struct VulkanApplicationInfo {
+    const char* application_name;
+    uint32_t    application_version;
+    const char* engine_name;
+    uint32_t    engine_version;
+    uint32_t    api_version;
+
+    operator const VkApplicationInfo*() const {
+        static VkApplicationInfo application_info;
+        application_info = {
+            .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pNext              = nullptr,
+            .pApplicationName   = application_name,
+            .applicationVersion = application_version,
+            .pEngineName        = engine_name,
+            .engineVersion      = engine_version,
+            .apiVersion         = api_version
+        };
+        return &application_info;
+    }
+};
+
+struct VulkanInstanceCreateInfo {
+    VulkanApplicationInfo      application_info;
+    std::vector<const char*>   enabled_layers;
+    std::vector<const char*>   enabled_extensions;
+
+    operator const VkInstanceCreateInfo*() const {
+        static VkInstanceCreateInfo create_info;
+        create_info = {
+            .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pNext                   = nullptr,
+            .flags                   = 0,
+            .pApplicationInfo        = application_info,
+            .enabledLayerCount       = enabled_layers.size(),
+            .ppEnabledLayerNames     = enabled_layers.data(),
+            .enabledExtensionCount   = enabled_extensions.size(),
+            .ppEnabledExtensionNames = enabled_extensions.data()
+        };
+        return &create_info;
+    }
+};
+
+struct VulkanDebugReportCallbackCreateInfoEXT {
+    VkDebugReportFlagsEXT        flags;
+    PFN_vkDebugReportCallbackEXT callback;
+    void*                        user_data;
+
+    operator const VkDebugReportCallbackCreateInfoEXT*() const {
+        static VkDebugReportCallbackCreateInfoEXT create_info;
+        create_info = {
+            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .pNext = nullptr,
+            .flags = flags,
+            .pfnCallback = callback,
+            .pUserData = nullptr
+        };
+        return &create_info;
+    }
 };
 
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
@@ -50,16 +111,19 @@ inline Deleter<Handle> vulkan_create(
     return handle;
 }
 
-inline Deleter<VkInstance> vulkan_create_instance(const VkInstanceCreateInfo& create_info) {
+inline Deleter<VkInstance> vulkan_create_instance(const VulkanInstanceCreateInfo& create_info) {
     return vulkan_create<VkInstance>(
         vkCreateInstance,
         vkDestroyInstance,
         "Failed to create instance.",
-        &create_info
+        create_info
     );
 }
 
-inline Deleter<VkDebugReportCallbackEXT> vulkan_create_debug_report_callback(const VkDebugReportCallbackCreateInfoEXT& create_info, VkInstance instance) {
+inline Deleter<VkDebugReportCallbackEXT> vulkan_create_debug_report_callback(
+    const VulkanDebugReportCallbackCreateInfoEXT& create_info,
+    VkInstance                                    instance) {
+
     const auto create = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
     const auto destroy = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
     if (create == nullptr || destroy == nullptr) throw "Debug report callback extension not present.";
@@ -68,7 +132,7 @@ inline Deleter<VkDebugReportCallbackEXT> vulkan_create_debug_report_callback(con
         destroy,
         instance,
         "Failed to create debug report callback.",
-        &create_info
+        create_info
     );
 }
 
