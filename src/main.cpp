@@ -39,26 +39,26 @@ int main() {
         enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
         // Create instance
-        const auto instance = vulkan_create_instance({
-            .application_info = {
+        const auto instance = vulkan_create_instance({{
+            .application_info = {{
                 .application_name    = "Stirling Engine Demo",
                 .application_version = VK_MAKE_VERSION(1, 0, 0),
                 .engine_name         = "Stirling Engine",
                 .engine_version      = VK_MAKE_VERSION(1, 0, 0),
                 .api_version         = VK_API_VERSION_1_0
-            },
+            }},
             .enabled_layers = {
                 "VK_LAYER_LUNARG_standard_validation"
             },
             .enabled_extensions = enabled_extensions
-        });
+        }});
 
         // Create debug report callback
-        const auto debug_callback_handle = vulkan_create_debug_report_callback({
-            .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
-            .callback = debug_callback,
+        const auto debug_callback_handle = vulkan_create_debug_report_callback({{
+            .flags     = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+            .callback  = debug_callback,
             .user_data = nullptr
-        }, instance);
+        }}, instance);
 
         // Create window surface
         const auto surface = vulkan_create_surface(instance, window);
@@ -78,7 +78,7 @@ int main() {
         const auto queue_families = vulkan_get_queue_families(physical_device, surface);
 
         // Create device
-        const auto device = vulkan_create_device({
+        const auto device = vulkan_create_device({{
             .queues = [&queue_families]() {
                 std::vector<VulkanDeviceQueueCreateInfo> create_infos;
                 // Only one queue per unique queue family index
@@ -86,10 +86,10 @@ int main() {
                     queue_families.graphics_queue,
                     queue_families.present_queue
                 }) {
-                    create_infos.push_back({
+                    create_infos.push_back({{
                         .queue_family_index = queue_families.graphics_queue,
                         .queue_priorities   = { 1.0f }
-                    });
+                    }});
                 }
                 return create_infos;
             }(),
@@ -98,7 +98,7 @@ int main() {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME    
             },
             .enabled_features = {}
-        }, physical_device);
+        }}, physical_device);
 
         // Retrieve queue handles
         const auto graphics_queue = vulkan_get_queue(device, queue_families.graphics_queue, 0);

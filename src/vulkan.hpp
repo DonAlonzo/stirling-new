@@ -15,7 +15,7 @@ private:
 };
 
 template<typename T, typename F>
-std::vector<T> cast_vector(const std::vector<F>& from) {
+inline std::vector<T> cast_vector(std::vector<F>& from) {
     return std::vector<T>{from.begin(), from.end()};
 }
 
@@ -25,106 +25,141 @@ struct QueueFamilyIndices {
 };
 
 struct VulkanApplicationInfo {
-    const char* application_name;
-    uint32_t    application_version;
-    const char* engine_name;
-    uint32_t    engine_version;
-    uint32_t    api_version;
+    struct Data {
+        const char* application_name;
+        uint32_t    application_version;
+        const char* engine_name;
+        uint32_t    engine_version;
+        uint32_t    api_version;
+    };
 
-    operator const VkApplicationInfo*() const {
-        static VkApplicationInfo application_info;
+    VulkanApplicationInfo(Data data) : data (data) {}
+
+    inline operator const VkApplicationInfo*() {
         application_info = {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pNext              = nullptr,
-            .pApplicationName   = application_name,
-            .applicationVersion = application_version,
-            .pEngineName        = engine_name,
-            .engineVersion      = engine_version,
-            .apiVersion         = api_version
+            .pApplicationName   = data.application_name,
+            .applicationVersion = data.application_version,
+            .pEngineName        = data.engine_name,
+            .engineVersion      = data.engine_version,
+            .apiVersion         = data.api_version
         };
         return &application_info;
     }
+
+private:
+    Data              data;
+    VkApplicationInfo application_info;
 };
 
 struct VulkanInstanceCreateInfo {
-    VulkanApplicationInfo      application_info;
-    std::vector<const char*>   enabled_layers;
-    std::vector<const char*>   enabled_extensions;
+    struct Data {
+        VulkanApplicationInfo      application_info;
+        std::vector<const char*>   enabled_layers;
+        std::vector<const char*>   enabled_extensions;
+    };
 
-    operator const VkInstanceCreateInfo*() const {
-        static VkInstanceCreateInfo create_info;
+    VulkanInstanceCreateInfo(Data data) : data (data) {}
+
+    inline operator const VkInstanceCreateInfo*() {
         create_info = {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .pApplicationInfo        = application_info,
-            .enabledLayerCount       = enabled_layers.size(),
-            .ppEnabledLayerNames     = enabled_layers.data(),
-            .enabledExtensionCount   = enabled_extensions.size(),
-            .ppEnabledExtensionNames = enabled_extensions.data()
+            .pApplicationInfo        = data.application_info,
+            .enabledLayerCount       = data.enabled_layers.size(),
+            .ppEnabledLayerNames     = data.enabled_layers.data(),
+            .enabledExtensionCount   = data.enabled_extensions.size(),
+            .ppEnabledExtensionNames = data.enabled_extensions.data()
         };
         return &create_info;
     }
+
+private:
+    Data                 data;
+    VkInstanceCreateInfo create_info;
 };
 
 struct VulkanDebugReportCallbackCreateInfoEXT {
-    VkDebugReportFlagsEXT        flags;
-    PFN_vkDebugReportCallbackEXT callback;
-    void*                        user_data;
+    struct Data {
+        VkDebugReportFlagsEXT        flags;
+        PFN_vkDebugReportCallbackEXT callback;
+        void*                        user_data;
+    };
 
-    operator const VkDebugReportCallbackCreateInfoEXT*() const {
-        static VkDebugReportCallbackCreateInfoEXT create_info;
+    VulkanDebugReportCallbackCreateInfoEXT(Data data) : data (data) {}
+
+    inline operator const VkDebugReportCallbackCreateInfoEXT*() {
         create_info = {
-            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-            .pNext = nullptr,
-            .flags = flags,
-            .pfnCallback = callback,
-            .pUserData = nullptr
+            .sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .pNext       = nullptr,
+            .flags       = data.flags,
+            .pfnCallback = data.callback,
+            .pUserData   = data.user_data
         };
         return &create_info;
     }
+
+private:
+    Data                               data;
+    VkDebugReportCallbackCreateInfoEXT create_info;
 };
 
 struct VulkanDeviceQueueCreateInfo {
-    uint32_t           queue_family_index;
-    std::vector<float> queue_priorities;
+    struct Data {
+        uint32_t           queue_family_index;
+        std::vector<float> queue_priorities;
+    };
 
-    operator const VkDeviceQueueCreateInfo*() const {
-        static VkDeviceQueueCreateInfo create_info;
+    VulkanDeviceQueueCreateInfo(Data data) : data (data) {}
+
+    inline operator const VkDeviceQueueCreateInfo*() {
         create_info = {
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = 0,
-            .queueFamilyIndex = queue_family_index,
-            .queueCount       = queue_priorities.size(),
-            .pQueuePriorities = queue_priorities.data()
+            .queueFamilyIndex = data.queue_family_index,
+            .queueCount       = data.queue_priorities.size(),
+            .pQueuePriorities = data.queue_priorities.data()
         };
         return &create_info;
     }
+
+private:
+    Data                    data;
+    VkDeviceQueueCreateInfo create_info;
 };
 
 struct VulkanDeviceCreateInfo {
-    std::vector<VulkanDeviceQueueCreateInfo> queues;
-    std::vector<const char*>                 enabled_layers;
-    std::vector<const char*>                 enabled_extensions;
-    VkPhysicalDeviceFeatures                 enabled_features;
-    
-    operator const VkDeviceCreateInfo*() const {
-        static VkDeviceCreateInfo create_info;
+    struct Data {
+        std::vector<VulkanDeviceQueueCreateInfo> queues;
+        std::vector<const char*>                 enabled_layers;
+        std::vector<const char*>                 enabled_extensions;
+        VkPhysicalDeviceFeatures                 enabled_features;
+    };
+
+    VulkanDeviceCreateInfo(Data data) : data (data) {}
+
+    inline operator const VkDeviceCreateInfo*() {
         create_info = {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .queueCreateInfoCount    = queues.size(),
-            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
-            .enabledLayerCount       = enabled_layers.size(),
-            .ppEnabledLayerNames     = enabled_layers.data(),
-            .enabledExtensionCount   = enabled_extensions.size(),
-            .ppEnabledExtensionNames = enabled_extensions.data(),
-            .pEnabledFeatures        = &enabled_features
+            .queueCreateInfoCount    = data.queues.size(),
+            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(data.queues)[0],
+            .enabledLayerCount       = data.enabled_layers.size(),
+            .ppEnabledLayerNames     = data.enabled_layers.data(),
+            .enabledExtensionCount   = data.enabled_extensions.size(),
+            .ppEnabledExtensionNames = data.enabled_extensions.data(),
+            .pEnabledFeatures        = &data.enabled_features
         };
         return &create_info;
     }
+
+private:
+    Data               data;
+    VkDeviceCreateInfo create_info;
 };
 
 struct VulkanSwapchainCreateInfoKHR {
@@ -277,7 +312,7 @@ struct VulkanRenderPassCreateInfo {
     std::vector<VulkanSubpassDescription>    subpasses;
     std::vector<VulkanSubpassDependency>     dependencies;
     
-    operator const VkRenderPassCreateInfo*() const {
+    operator const VkRenderPassCreateInfo*() {
         static VkRenderPassCreateInfo create_info;
         create_info = {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -470,10 +505,10 @@ inline Deleter<Handle> vulkan_create(
     Create      create,
     Destroy     destroy,
     const char* assertion_message,
-    Args...     args) {
+    Args&&...   args) {
 
     Deleter<Handle> handle{destroy};
-    vulkan_assert(create(args..., nullptr, handle.replace()), assertion_message);
+    vulkan_assert(create(std::forward<Args>(args)..., nullptr, handle.replace()), assertion_message);
     return handle;
 }
 
@@ -483,14 +518,14 @@ inline Deleter<Handle> vulkan_create(
     Destroy     destroy,
     Parent      parent,
     const char* assertion_message,
-    Args...     args) {
+    Args&&...   args) {
 
     Deleter<Handle> handle{destroy, parent};
-    vulkan_assert(create(parent, args..., nullptr, handle.replace()), assertion_message);
+    vulkan_assert(create(parent, std::forward<Args>(args)..., nullptr, handle.replace()), assertion_message);
     return handle;
 }
 
-inline Deleter<VkInstance> vulkan_create_instance(const VulkanInstanceCreateInfo& create_info) {
+inline Deleter<VkInstance> vulkan_create_instance(VulkanInstanceCreateInfo&& create_info) {
     return vulkan_create<VkInstance>(
         vkCreateInstance,
         vkDestroyInstance,
@@ -500,8 +535,8 @@ inline Deleter<VkInstance> vulkan_create_instance(const VulkanInstanceCreateInfo
 }
 
 inline Deleter<VkDebugReportCallbackEXT> vulkan_create_debug_report_callback(
-    const VulkanDebugReportCallbackCreateInfoEXT& create_info,
-    VkInstance                                    instance) {
+    VulkanDebugReportCallbackCreateInfoEXT&& create_info,
+    VkInstance                               instance) {
 
     const auto create = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
     const auto destroy = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
@@ -525,7 +560,7 @@ inline Deleter<VkSurfaceKHR> vulkan_create_surface(VkInstance instance, GLFWwind
     );
 }
 
-inline Deleter<VkDevice> vulkan_create_device(const VulkanDeviceCreateInfo& create_info, VkPhysicalDevice physical_device) {
+inline Deleter<VkDevice> vulkan_create_device(VulkanDeviceCreateInfo&& create_info, VkPhysicalDevice physical_device) {
     return vulkan_create<VkDevice>(
         vkCreateDevice,
         vkDestroyDevice,
@@ -535,7 +570,7 @@ inline Deleter<VkDevice> vulkan_create_device(const VulkanDeviceCreateInfo& crea
     );
 }
 
-inline Deleter<VkSwapchainKHR> vulkan_create_swapchain(const VulkanSwapchainCreateInfoKHR& create_info, VkDevice device) {
+inline Deleter<VkSwapchainKHR> vulkan_create_swapchain(VulkanSwapchainCreateInfoKHR&& create_info, VkDevice device) {
     return vulkan_create<VkSwapchainKHR>(
         vkCreateSwapchainKHR,
         vkDestroySwapchainKHR,
@@ -545,7 +580,7 @@ inline Deleter<VkSwapchainKHR> vulkan_create_swapchain(const VulkanSwapchainCrea
     );
 }
 
-inline Deleter<VkImageView> vulkan_create_image_view(const VulkanImageViewCreateInfo& create_info, VkDevice device) {
+inline Deleter<VkImageView> vulkan_create_image_view(VulkanImageViewCreateInfo&& create_info, VkDevice device) {
     return vulkan_create<VkImageView>(
         vkCreateImageView,
         vkDestroyImageView,
@@ -576,7 +611,7 @@ inline Deleter<VkShaderModule> vulkan_create_shader_module(const char* file_name
     }, device);
 }
 
-inline Deleter<VkRenderPass> vulkan_create_render_pass(const VulkanRenderPassCreateInfo& create_info, VkDevice device) {
+inline Deleter<VkRenderPass> vulkan_create_render_pass(VulkanRenderPassCreateInfo&& create_info, VkDevice device) {
     return vulkan_create<VkRenderPass>(
         vkCreateRenderPass,
         vkDestroyRenderPass,
@@ -631,7 +666,7 @@ inline Deleter<VkPipeline> vulkan_create_pipeline(
     );
 }
 
-inline Deleter<VkFramebuffer> vulkan_create_framebuffer(const VulkanFramebufferCreateInfo& create_info, VkDevice device) {
+inline Deleter<VkFramebuffer> vulkan_create_framebuffer(VulkanFramebufferCreateInfo&& create_info, VkDevice device) {
     return vulkan_create<VkFramebuffer>(
         vkCreateFramebuffer,
         vkDestroyFramebuffer,
@@ -693,7 +728,7 @@ inline std::vector<Deleter<VkFence>> vulkan_create_fences(VkDevice device, size_
     return fences;
 }
 
-inline Deleter<VkCommandPool> vulkan_create_command_pool(const VulkanCommandPoolCreateInfo& create_info, VkDevice device) {
+inline Deleter<VkCommandPool> vulkan_create_command_pool(VulkanCommandPoolCreateInfo&& create_info, VkDevice device) {
     return vulkan_create<VkCommandPool>(
         vkCreateCommandPool,
         vkDestroyCommandPool,
@@ -703,7 +738,7 @@ inline Deleter<VkCommandPool> vulkan_create_command_pool(const VulkanCommandPool
     );
 }
 
-inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(const VulkanCommandBufferAllocateInfo& allocate_info, VkDevice device) {
+inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanCommandBufferAllocateInfo&& allocate_info, VkDevice device) {
     std::vector<VkCommandBuffer> command_buffers{allocate_info.command_buffer_count};
     vulkan_assert(
         vkAllocateCommandBuffers(device, allocate_info, command_buffers.data()),
@@ -712,14 +747,14 @@ inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(const Vulkan
     return command_buffers;
 }
 
-inline void vulkan_begin_command_buffer(const VulkanCommandBufferBeginInfo& begin_info, VkCommandBuffer command_buffer) {
+inline void vulkan_begin_command_buffer(VulkanCommandBufferBeginInfo&& begin_info, VkCommandBuffer command_buffer) {
     vulkan_assert(
         vkBeginCommandBuffer(command_buffer, begin_info),
         "Failed to begin command buffer."
     );
 }
 
-inline void vulkan_begin_render_pass(const VulkanRenderPassBeginInfo& begin_info, VkCommandBuffer command_buffer, VkSubpassContents contents) {
+inline void vulkan_begin_render_pass(VulkanRenderPassBeginInfo&& begin_info, VkCommandBuffer command_buffer, VkSubpassContents contents) {
     vkCmdBeginRenderPass(command_buffer, begin_info, contents);
 }
 
@@ -773,7 +808,7 @@ inline uint32_t vulkan_acquire_next_image(
     return image_index;
 }
 
-inline void vulkan_queue_submit(const std::vector<VulkanSubmitInfo>& submit_infos, VkQueue queue, VkFence fence) {
+inline void vulkan_queue_submit(std::vector<VulkanSubmitInfo>&& submit_infos, VkQueue queue, VkFence fence) {
     vulkan_assert(
         vkQueueSubmit(
             queue,
@@ -785,7 +820,7 @@ inline void vulkan_queue_submit(const std::vector<VulkanSubmitInfo>& submit_info
     );
 }
 
-inline void vulkan_queue_present(const VulkanPresentInfoKHR& present_info, VkQueue queue) {
+inline void vulkan_queue_present(VulkanPresentInfoKHR&& present_info, VkQueue queue) {
     vulkan_assert(vkQueuePresentKHR(queue, present_info), "Failed to present to queue.");
 }
 
