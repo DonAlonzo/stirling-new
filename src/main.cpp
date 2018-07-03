@@ -289,11 +289,8 @@ int main() {
             },
 
             .vertex_input_state = {{
-                .vertex_binding_descriptions = {
-                },
-
-                .vertex_attribute_descriptions = {
-                }
+                .vertex_binding_descriptions = Vertex::get_binding_descriptions(),
+                .vertex_attribute_descriptions = Vertex::get_attribute_descriptions()
             }},
 
             .input_assembly_state = {{
@@ -419,6 +416,47 @@ int main() {
             .command_buffer_count = swapchain_framebuffers.size()
         }}, device);
 
+        // Create vertices
+        const std::vector<Vertex> vertices = {
+            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        };
+
+        // Calculate vertex buffer size
+        const auto vertex_buffer_size = sizeof(vertices[0]) * vertices.size();
+
+        // Create vertex buffer
+        const auto vertex_buffer = vulkan_create_buffer({{
+            .size                 = vertex_buffer_size,
+            .usage                = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .sharing_mode         = VK_SHARING_MODE_EXCLUSIVE,
+            .queue_family_indices = {}
+        }}, device);
+
+        // Find memory requirements for vertex buffer
+        VkMemoryRequirements memory_requirements;
+        vkGetBufferMemoryRequirements(device, vertex_buffer, &memory_requirements);
+
+        // Allocate memory for vertex buffer
+        const auto vertex_buffer_memory = vulkan_allocate_memory({{
+            .allocation_size   = memory_requirements.size,
+            .memory_type_index = find_memory_type(
+                physical_device,
+                memory_requirements.memoryTypeBits,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            )
+        }}, device);
+
+        // Bind memory to vertex buffer
+        vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
+
+        // Map memory
+        void* data;
+        vkMapMemory(device, vertex_buffer_memory, 0, vertex_buffer_size, 0, &data);
+        memcpy(data, vertices.data(), static_cast<size_t>(vertex_buffer_size));
+        vkUnmapMemory(device, vertex_buffer_memory);
+
         // Record command buffers
         for (size_t i = 0; i < command_buffers.size(); ++i) {
             // Begin command buffer
@@ -450,8 +488,11 @@ int main() {
             // Bind pipeline
             vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
+            // Bind vertex buffer
+            vulkan_cmd_bind_vertex_buffers(command_buffers[i], 0, { vertex_buffer }, { 0 });
+
             // Draw
-            vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+            vkCmdDraw(command_buffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
             // End render pass
             vkCmdEndRenderPass(command_buffers[i]);

@@ -2,13 +2,47 @@
 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <cassert>
 #include <memory>
 #include <vector>
 
-template<typename T, typename F>
-inline std::vector<T> cast_vector(const std::vector<F>& from) {
-    return std::vector<T>{from.begin(), from.end()};
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+    
+    static std::vector<VkVertexInputBindingDescription> get_binding_descriptions() {
+        return {
+            {
+                .binding   = 0,
+                .stride    = sizeof(Vertex),
+                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+            }
+        };
+    }
+    
+    static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
+        return {
+            {
+                .location = 0,
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32_SFLOAT,
+                .offset   = offsetof(Vertex, pos)
+            },
+            {
+                .location = 1,
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset   = offsetof(Vertex, color)
+            }
+        };
+    }
+};
+
+template<typename To, typename From>
+inline std::vector<To> cast_vector(const std::vector<From>& from) {
+    return std::vector<To>{from.begin(), from.end()};
 }
 
 struct QueueFamilyIndices {
@@ -19,7 +53,7 @@ struct QueueFamilyIndices {
 template<typename From, typename To>
 struct VulkanWrapper {
     VulkanWrapper() = default;
-    VulkanWrapper(From&& from) : to (std::move(from)) {}
+    VulkanWrapper(From&& from) : to (from) {}
 
     inline operator const To*() const { return &to; }
     inline const To& data() const { return to; }
@@ -759,6 +793,44 @@ struct VulkanGraphicsPipelineCreateInfoData {
 typedef VulkanWrapper<VulkanGraphicsPipelineCreateInfoData, VkGraphicsPipelineCreateInfo>
     VulkanGraphicsPipelineCreateInfo;
 
+struct VulkanBufferCreateInfoData {
+    VkDeviceSize          size;
+    VkBufferUsageFlags    usage;
+    VkSharingMode         sharing_mode;
+    std::vector<uint32_t> queue_family_indices;
+
+    inline operator const VkBufferCreateInfo() {
+        return {
+            .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .size                  = size,
+            .usage                 = usage,
+            .sharingMode           = sharing_mode,
+            .queueFamilyIndexCount = queue_family_indices.size(),
+            .pQueueFamilyIndices   = queue_family_indices.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanBufferCreateInfoData, VkBufferCreateInfo>
+    VulkanBufferCreateInfo;
+
+struct VulkanMemoryAllocateInfoData {
+    VkDeviceSize allocation_size;
+    uint32_t     memory_type_index;
+
+    inline operator const VkMemoryAllocateInfo() {
+        return {
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext           = nullptr,
+            .allocationSize  = allocation_size,
+            .memoryTypeIndex = memory_type_index
+        };
+    }
+};
+typedef VulkanWrapper<VulkanMemoryAllocateInfoData, VkMemoryAllocateInfo>
+    VulkanMemoryAllocateInfo;
+
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
     case VK_SUCCESS: return;
@@ -1011,6 +1083,26 @@ inline Deleter<VkCommandPool> vulkan_create_command_pool(VulkanCommandPoolCreate
     );
 }
 
+inline Deleter<VkBuffer> vulkan_create_buffer(VulkanBufferCreateInfo&& create_info, VkDevice device) {
+    return vulkan_create<VkBuffer>(
+        vkCreateBuffer,
+        vkDestroyBuffer,
+        device,
+        "Failed to create buffer.",
+        create_info
+    );
+}
+
+inline Deleter<VkDeviceMemory> vulkan_allocate_memory(VulkanMemoryAllocateInfo&& allocate_info, VkDevice device) {
+    return vulkan_create<VkDeviceMemory>(
+        vkAllocateMemory,
+        vkFreeMemory,
+        device,
+        "Failed to allocate memory.",
+        allocate_info
+    );
+}
+
 inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanCommandBufferAllocateInfo&& allocate_info, VkDevice device) {
     std::vector<VkCommandBuffer> command_buffers{allocate_info.data().commandBufferCount};
     vulkan_assert(
@@ -1019,6 +1111,36 @@ inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanComman
     );
     return command_buffers;
 }
+
+inline void vulkan_cmd_bind_vertex_buffers(
+    VkCommandBuffer           command_buffer,
+    uint32_t                  first_binding,
+    std::vector<VkBuffer>     buffers,
+    std::vector<VkDeviceSize> offsets) {
+
+    assert(buffers.size() == offsets.size());
+    vkCmdBindVertexBuffers(
+        command_buffer,
+        first_binding,
+        buffers.size(),
+        buffers.data(),
+        offsets.data()
+    );
+}
+
+inline uint32_t find_memory_type(VkPhysicalDevice physical_device, uint32_t type_filter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memory_properties;
+    vkGetPhysicalDeviceMemoryProperties(physical_device, &memory_properties);
+
+    for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
+        if (type_filter & (1 << i) &&
+           (memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw "Failed to find suitable memory type.";
+};
 
 inline void vulkan_begin_command_buffer(VulkanCommandBufferBeginInfo&& begin_info, VkCommandBuffer command_buffer) {
     vulkan_assert(
