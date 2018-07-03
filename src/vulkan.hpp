@@ -1112,6 +1112,21 @@ inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanComman
     return command_buffers;
 }
 
+inline void vulkan_cmd_copy_buffer(
+    VkCommandBuffer           command_buffer,
+    VkBuffer                  src_buffer,
+    VkBuffer                  dst_buffer,
+    std::vector<VkBufferCopy> regions) {
+
+    vkCmdCopyBuffer(
+        command_buffer,
+        src_buffer,
+        dst_buffer,
+        regions.size(),
+        regions.data()
+    );
+}
+
 inline void vulkan_cmd_bind_vertex_buffers(
     VkCommandBuffer           command_buffer,
     uint32_t                  first_binding,
