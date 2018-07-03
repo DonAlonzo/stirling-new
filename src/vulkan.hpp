@@ -19,7 +19,7 @@ struct QueueFamilyIndices {
 template<typename From, typename To>
 struct VulkanWrapper {
     VulkanWrapper() = default;
-    VulkanWrapper(From&& from) : to (from) {}
+    VulkanWrapper(From&& from) : to (std::move(from)) {}
 
     inline operator const To*() const { return &to; }
     inline const To& data() const { return to; }
