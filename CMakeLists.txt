@@ -4,6 +4,11 @@ project(stirling)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(
+    "$<$<CXX_COMPILER_ID:GNU>:-O3>"
+    "$<$<CXX_COMPILER_ID:GNU>:-Wno-narrowing>"
+)
+
 # Dependencies
 
 find_package(Vulkan REQUIRED)

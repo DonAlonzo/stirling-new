@@ -154,7 +154,7 @@ int main() {
 
         // Create swapchain
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
-        const auto swapchain = vulkan_create_swapchain({
+        const auto swapchain = vulkan_create_swapchain({{
             .surface              = surface,
             .min_image_count      = swap_image_count,
             .image_format         = surface_format.format,
@@ -178,7 +178,7 @@ int main() {
             .present_mode         = present_mode,
             .clipped              = VK_TRUE,
             .old_swapchain        = VK_NULL_HANDLE
-        }, device);
+        }}, device);
 
         // Create swapchain image views
         const auto swapchain_image_views = [&]() {
@@ -187,7 +187,7 @@ int main() {
             
             std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
             for (size_t i = 0; i < swapchain_images.size(); ++i) {
-                swapchain_image_views[i] = vulkan_create_image_view({
+                swapchain_image_views[i] = vulkan_create_image_view({{
                     .image      = swapchain_images[i],
                     .view_type  = VK_IMAGE_VIEW_TYPE_2D,
                     .format     = surface_format.format,
@@ -204,15 +204,15 @@ int main() {
                         .baseArrayLayer = 0,
                         .layerCount     = 1
                     }
-                }, device);
+                }}, device);
             }
             return swapchain_image_views;
         }();
 
         // Create render pass
-        const auto render_pass = vulkan_create_render_pass({
+        const auto render_pass = vulkan_create_render_pass({{
             .attachments = {
-                {
+                {{
                     .flags            = 0,
                     .format           = surface_format.format,
                     .samples          = VK_SAMPLE_COUNT_1_BIT,
@@ -222,10 +222,10 @@ int main() {
                     .stencil_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                     .initial_layout   = VK_IMAGE_LAYOUT_UNDEFINED,
                     .final_layout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                }
+                }}
             },
             .subpasses = {
-                {
+                {{
                     .flags = 0,
 
                     .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -245,10 +245,10 @@ int main() {
                     .depth_stencil_attachment = { VK_ATTACHMENT_UNUSED },
 
                     .preserve_attachments = {}
-                }
+                }}
             },
             .dependencies = {
-                {
+                {{
                     // Subpasses
                     .src_subpass = VK_SUBPASS_EXTERNAL,
                     .dst_subpass = 0,
@@ -263,80 +263,49 @@ int main() {
 
                     // Flags
                     .dependency_flags = 0
-                }
+                }}
             }
-        }, device);
+        }}, device);
 
         // Create pipelines
-        const auto pipeline = vulkan_create_pipeline({
-            .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-
-            // Stages
-            .stageCount = 2,
-            .pStages    = std::vector<VkPipelineShaderStageCreateInfo>{
+        const auto pipeline = vulkan_create_pipeline({{
+            .stages = {
                 // Vertex shader stage
-                {
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
+                {{
                     .stage               = VK_SHADER_STAGE_VERTEX_BIT,
                     .module              = vulkan_create_shader_module("vert.spv", device),
-                    .pName               = "main",
-                    .pSpecializationInfo = nullptr
-                },
+                    .name                = "main",
+                    .specialization_info = {{
+                    }}
+                }},
                 // Fragment shader stage
-                {
-                    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-
+                {{
                     .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
                     .module              = vulkan_create_shader_module("frag.spv", device),
-                    .pName               = "main",
-                    .pSpecializationInfo = nullptr
+                    .name                = "main",
+                    .specialization_info = {{
+                    }}
+                }}
+            },
+
+            .vertex_input_state = {{
+                .vertex_binding_descriptions = {
+                },
+
+                .vertex_attribute_descriptions = {
                 }
-            }.data(),
-
-            // Vertex input
-            .pVertexInputState = Wrapper<VkPipelineVertexInputStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                // Vertex binding descriptions
-                .vertexBindingDescriptionCount = 0,
-                .pVertexBindingDescriptions    = nullptr,
-
-                // Vertex attribute
-                .vertexAttributeDescriptionCount = 0,
-                .pVertexAttributeDescriptions    = nullptr
             }},
 
-            // Input assembly
-            .pInputAssemblyState = Wrapper<VkPipelineInputAssemblyStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                .primitiveRestartEnable = VK_FALSE
+            .input_assembly_state = {{
+                .topology                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .primitive_restart_enable = VK_FALSE
             }},
 
-            // Tessellation
-            .pTessellationState = nullptr,
+            .tessellation_state = {{
+            }},
 
-            // Viewport
-            .pViewportState = Wrapper<VkPipelineViewportStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                // Viewports
-                .viewportCount = 1,
-                .pViewports    = std::vector<VkViewport>{
+            .viewport_state = {{
+                .viewports = {
                     {
                         .x        = 0.0f,
                         .y        = 0.0f,
@@ -345,151 +314,128 @@ int main() {
                         .minDepth = 0.0f,
                         .maxDepth = 1.0f
                     }
-                }.data(),
+                },
 
-                // Scissors
-                .scissorCount = 1,
-                .pScissors    = std::vector<VkRect2D>{
+                .scissors = {
                     {
                         .offset = { 0, 0 },
                         .extent = surface_extent
                     }
-                }.data()
+                }
             }},
 
-            // Rasterization
-            .pRasterizationState = Wrapper<VkPipelineRasterizationStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                .depthClampEnable        = VK_FALSE,
-                .rasterizerDiscardEnable = VK_FALSE,
-                .polygonMode             = VK_POLYGON_MODE_FILL,
-                .cullMode                = VK_CULL_MODE_BACK_BIT,
-                .frontFace               = VK_FRONT_FACE_CLOCKWISE,
-                .depthBiasEnable         = VK_FALSE,
-                .depthBiasConstantFactor = 0.0f,
-                .depthBiasClamp          = 0.0f,
-                .depthBiasSlopeFactor    = 0.0f,
-                .lineWidth               = 1.0f
+            .rasterization_state = {{
+                .depth_clamp_enable         = VK_FALSE,
+                .rasterizer_discard_enable  = VK_FALSE,
+                .polygon_mode               = VK_POLYGON_MODE_FILL,
+                .cull_mode                  = VK_CULL_MODE_BACK_BIT,
+                .front_face                 = VK_FRONT_FACE_CLOCKWISE,
+                .depth_bias_enable          = VK_FALSE,
+                .depth_bias_constant_factor = 0.0f,
+                .depth_bias_clamp           = 0.0f,
+                .depth_bias_slope_factor    = 0.0f,
+                .line_width                 = 1.0f
             }},
 
-            // Multisampler
-            .pMultisampleState = Wrapper<VkPipelineMultisampleStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
-                .sampleShadingEnable   = VK_FALSE,
-                .minSampleShading      = 1.0f,
-                .pSampleMask           = nullptr,
-                .alphaToCoverageEnable = VK_FALSE,
-                .alphaToOneEnable      = VK_FALSE
+            .multisample_state = {{
+                .rasterization_samples    = VK_SAMPLE_COUNT_1_BIT,
+                .sample_shading_enable    = VK_FALSE,
+                .min_sample_shading       = 1.0f,
+                .sample_mask              = -1,
+                .alpha_to_coverage_enable = VK_FALSE,
+                .alpha_to_one_enable      = VK_FALSE
             }},
 
-            // Depth stencil
-            .pDepthStencilState = nullptr,
-
-            // Color blending
-            .pColorBlendState = Wrapper<VkPipelineColorBlendStateCreateInfo>{{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-
-                // Logical operation
-                .logicOpEnable = VK_FALSE,
-                .logicOp       = VK_LOGIC_OP_COPY,
-
-                // Attachments
-                .attachmentCount = 1,
-                .pAttachments    = std::vector<VkPipelineColorBlendAttachmentState>{{
-                    .blendEnable         = VK_FALSE,
-                    .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                    .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                    .colorBlendOp        = VK_BLEND_OP_ADD,
-                    .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                    .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                    .alphaBlendOp        = VK_BLEND_OP_ADD,
-                    .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
-                                         | VK_COLOR_COMPONENT_G_BIT
-                                         | VK_COLOR_COMPONENT_B_BIT
-                                         | VK_COLOR_COMPONENT_A_BIT
-                }}.data(),
-
-                // Blend constants
-                .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f }
+            .depth_stencil_state = {{
             }},
 
-            // Dynamic state
-            .pDynamicState = nullptr,
+            .color_blend_state = {{
+                .logic_op_enable = VK_FALSE,
+                .logic_op        = VK_LOGIC_OP_COPY,
 
-            // Layout
-            .layout = vulkan_create_pipeline_layout({
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
+                .attachments = {
+                    {{
+                        .blendEnable         = VK_FALSE,
+                        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                        .colorBlendOp        = VK_BLEND_OP_ADD,
+                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                        .alphaBlendOp        = VK_BLEND_OP_ADD,
+                        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
+                                             | VK_COLOR_COMPONENT_G_BIT
+                                             | VK_COLOR_COMPONENT_B_BIT
+                                             | VK_COLOR_COMPONENT_A_BIT
+                    }}
+                },
 
-                // Set layouts
-                .setLayoutCount = 0,
-                .pSetLayouts    = nullptr,
+                .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
+            }},
 
-                // Push constant ranges
-                .pushConstantRangeCount = 0,
-                .pPushConstantRanges    = nullptr
-            }, device),
+            .dynamic_state = {{
+            }},
 
-            // Render pass
-            .renderPass = render_pass,
+            .layout = vulkan_create_pipeline_layout({{
+                .set_layouts = {
+                },
+                .push_constant_ranges = {
+                }
+            }}, device),
 
-            // Subpass
+            .render_pass = render_pass,
+
             .subpass = 0,
 
-            // Base pipeline
-            .basePipelineHandle = VK_NULL_HANDLE,
-            .basePipelineIndex  = -1
-        }, VK_NULL_HANDLE, device);
+            .base_pipeline_handle = VK_NULL_HANDLE,
+            .base_pipeline_index  = -1
+        }}, VK_NULL_HANDLE, device);
 
         // Create framebuffers
         std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
         for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
-            swapchain_framebuffers[i] = vulkan_create_framebuffer({
+            swapchain_framebuffers[i] = vulkan_create_framebuffer({{
                 .render_pass = render_pass,
 
-                .attachments = {
+                .attachments = {{
                     swapchain_image_views[i]
-                },
+                }},
 
                 .width  = surface_extent.width,
                 .height = surface_extent.height,
                 .layers = 1
-            }, device);
+            }}, device);
         }
 
         // Create command pool
-        const auto command_pool = vulkan_create_command_pool({
+        const auto command_pool = vulkan_create_command_pool({{
             .flags              = 0,
             .queue_family_index = queue_families.graphics_queue
-        }, device);
+        }}, device);
 
         // Allocate command buffers
-        const auto command_buffers = vulkan_allocate_command_buffers({
+        const auto command_buffers = vulkan_allocate_command_buffers({{
             .command_pool         = command_pool,
             .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .command_buffer_count = swapchain_framebuffers.size()
-        }, device);
+        }}, device);
 
         // Record command buffers
         for (size_t i = 0; i < command_buffers.size(); ++i) {
             // Begin command buffer
-            vulkan_begin_command_buffer({
+            vulkan_begin_command_buffer({{
                 .flags            = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-                .inheritance_info = {}
-            }, command_buffers[i]);
+                .inheritance_info = {{
+                    .render_pass            = VK_NULL_HANDLE,
+                    .subpass                = 0,
+                    .framebuffer            = VK_NULL_HANDLE,
+                    .occlusion_query_enable = false,
+                    .query_flags            = 0,
+                    .pipeline_statistics    = 0,
+                }}
+            }}, command_buffers[i]);
 
             // Begin render pass
-            vulkan_begin_render_pass({
+            vulkan_begin_render_pass({{
                 .render_pass  = render_pass,
                 .framebuffer  = swapchain_framebuffers[i],
                 .render_area  = {
@@ -499,7 +445,7 @@ int main() {
                 .clear_values = {
                     { 0.0f, 0.0f, 0.0f, 1.0f }
                 }
-            }, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);
+            }}, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);
 
             // Bind pipeline
             vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -534,7 +480,7 @@ int main() {
             
             // Submit command buffer to graphics queue
             vulkan_queue_submit({
-                {
+                {{
                     .wait_semaphores = {
                         image_available_semaphores[current_frame]
                     },
@@ -548,11 +494,11 @@ int main() {
                     .signal_semaphores = {
                         render_finished_semaphores[current_frame]
                     }
-                }
+                }}
             }, graphics_queue, in_flight_fences[current_frame]);
 
             // Present images
-            vulkan_queue_present({
+            vulkan_queue_present({{
                 .wait_semaphores = {
                     render_finished_semaphores[current_frame]
                 },
@@ -564,7 +510,7 @@ int main() {
                 .image_indices = {
                     image_index
                 }
-            }, present_queue);
+            }}, present_queue);
 
             // Wait until queue is idle
             vkQueueWaitIdle(present_queue);

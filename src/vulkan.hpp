@@ -15,7 +15,7 @@ private:
 };
 
 template<typename T, typename F>
-inline std::vector<T> cast_vector(std::vector<F>& from) {
+inline std::vector<T> cast_vector(const std::vector<F>& from) {
     return std::vector<T>{from.begin(), from.end()};
 }
 
@@ -24,145 +24,122 @@ struct QueueFamilyIndices {
     uint32_t present_queue = -1;
 };
 
-struct VulkanApplicationInfo {
-    struct Data {
-        const char* application_name;
-        uint32_t    application_version;
-        const char* engine_name;
-        uint32_t    engine_version;
-        uint32_t    api_version;
-    };
-
-    VulkanApplicationInfo(Data data) : data (data) {}
-
-    inline operator const VkApplicationInfo*() {
-        application_info = {
-            .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-            .pNext              = nullptr,
-            .pApplicationName   = data.application_name,
-            .applicationVersion = data.application_version,
-            .pEngineName        = data.engine_name,
-            .engineVersion      = data.engine_version,
-            .apiVersion         = data.api_version
-        };
-        return &application_info;
+template<typename From, typename To>
+struct VulkanWrapper {
+    VulkanWrapper() = default;
+    VulkanWrapper(From from) : to (from) {}
+    inline operator const To*() const {
+        return &to;
     }
-
+    inline const To& data() const { return to; }
 private:
-    Data              data;
-    VkApplicationInfo application_info;
+    To to;
 };
 
-struct VulkanInstanceCreateInfo {
-    struct Data {
-        VulkanApplicationInfo      application_info;
-        std::vector<const char*>   enabled_layers;
-        std::vector<const char*>   enabled_extensions;
+struct VulkanApplicationInfoData {
+    const char* application_name;
+    uint32_t    application_version;
+    const char* engine_name;
+    uint32_t    engine_version;
+    uint32_t    api_version;
+
+    inline operator const VkApplicationInfo() {
+        return {
+            .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pNext              = nullptr,
+            .pApplicationName   = application_name,
+            .applicationVersion = application_version,
+            .pEngineName        = engine_name,
+            .engineVersion      = engine_version,
+            .apiVersion         = api_version
+        };
     };
+};
+typedef VulkanWrapper<VulkanApplicationInfoData, VkApplicationInfo>
+    VulkanApplicationInfo;
 
-    VulkanInstanceCreateInfo(Data data) : data (data) {}
+struct VulkanInstanceCreateInfoData {
+    VulkanApplicationInfo    application_info;
+    std::vector<const char*> enabled_layers;
+    std::vector<const char*> enabled_extensions;
 
-    inline operator const VkInstanceCreateInfo*() {
-        create_info = {
+    inline operator const VkInstanceCreateInfo() {
+        return {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .pApplicationInfo        = data.application_info,
-            .enabledLayerCount       = data.enabled_layers.size(),
-            .ppEnabledLayerNames     = data.enabled_layers.data(),
-            .enabledExtensionCount   = data.enabled_extensions.size(),
-            .ppEnabledExtensionNames = data.enabled_extensions.data()
+            .pApplicationInfo        = application_info,
+            .enabledLayerCount       = enabled_layers.size(),
+            .ppEnabledLayerNames     = enabled_layers.data(),
+            .enabledExtensionCount   = enabled_extensions.size(),
+            .ppEnabledExtensionNames = enabled_extensions.data()
         };
-        return &create_info;
     }
-
-private:
-    Data                 data;
-    VkInstanceCreateInfo create_info;
 };
+typedef VulkanWrapper<VulkanInstanceCreateInfoData, VkInstanceCreateInfo>
+    VulkanInstanceCreateInfo;
 
-struct VulkanDebugReportCallbackCreateInfoEXT {
-    struct Data {
-        VkDebugReportFlagsEXT        flags;
-        PFN_vkDebugReportCallbackEXT callback;
-        void*                        user_data;
-    };
+struct VulkanDebugReportCallbackCreateInfoEXTData {
+    VkDebugReportFlagsEXT        flags;
+    PFN_vkDebugReportCallbackEXT callback;
+    void*                        user_data;
 
-    VulkanDebugReportCallbackCreateInfoEXT(Data data) : data (data) {}
-
-    inline operator const VkDebugReportCallbackCreateInfoEXT*() {
-        create_info = {
+    inline operator const VkDebugReportCallbackCreateInfoEXT() {
+        return {
             .sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
             .pNext       = nullptr,
-            .flags       = data.flags,
-            .pfnCallback = data.callback,
-            .pUserData   = data.user_data
+            .flags       = flags,
+            .pfnCallback = callback,
+            .pUserData   = user_data
         };
-        return &create_info;
     }
-
-private:
-    Data                               data;
-    VkDebugReportCallbackCreateInfoEXT create_info;
 };
+typedef VulkanWrapper<VulkanDebugReportCallbackCreateInfoEXTData, VkDebugReportCallbackCreateInfoEXT>
+    VulkanDebugReportCallbackCreateInfoEXT;
 
-struct VulkanDeviceQueueCreateInfo {
-    struct Data {
-        uint32_t           queue_family_index;
-        std::vector<float> queue_priorities;
-    };
+struct VulkanDeviceQueueCreateInfoData {
+    uint32_t           queue_family_index;
+    std::vector<float> queue_priorities;
 
-    VulkanDeviceQueueCreateInfo(Data data) : data (data) {}
-
-    inline operator const VkDeviceQueueCreateInfo*() {
-        create_info = {
+    inline operator const VkDeviceQueueCreateInfo() {
+        return {
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = 0,
-            .queueFamilyIndex = data.queue_family_index,
-            .queueCount       = data.queue_priorities.size(),
-            .pQueuePriorities = data.queue_priorities.data()
+            .queueFamilyIndex = queue_family_index,
+            .queueCount       = queue_priorities.size(),
+            .pQueuePriorities = queue_priorities.data()
         };
-        return &create_info;
     }
+}; 
+typedef VulkanWrapper<VulkanDeviceQueueCreateInfoData, VkDeviceQueueCreateInfo>
+    VulkanDeviceQueueCreateInfo; 
 
-private:
-    Data                    data;
-    VkDeviceQueueCreateInfo create_info;
-};
+struct VulkanDeviceCreateInfoData {
+    std::vector<VulkanDeviceQueueCreateInfo> queues;
+    std::vector<const char*>                 enabled_layers;
+    std::vector<const char*>                 enabled_extensions;
+    VkPhysicalDeviceFeatures                 enabled_features;
 
-struct VulkanDeviceCreateInfo {
-    struct Data {
-        std::vector<VulkanDeviceQueueCreateInfo> queues;
-        std::vector<const char*>                 enabled_layers;
-        std::vector<const char*>                 enabled_extensions;
-        VkPhysicalDeviceFeatures                 enabled_features;
-    };
-
-    VulkanDeviceCreateInfo(Data data) : data (data) {}
-
-    inline operator const VkDeviceCreateInfo*() {
-        create_info = {
+    inline operator const VkDeviceCreateInfo() {
+        return {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .queueCreateInfoCount    = data.queues.size(),
-            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(data.queues)[0],
-            .enabledLayerCount       = data.enabled_layers.size(),
-            .ppEnabledLayerNames     = data.enabled_layers.data(),
-            .enabledExtensionCount   = data.enabled_extensions.size(),
-            .ppEnabledExtensionNames = data.enabled_extensions.data(),
-            .pEnabledFeatures        = &data.enabled_features
+            .queueCreateInfoCount    = queues.size(),
+            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
+            .enabledLayerCount       = enabled_layers.size(),
+            .ppEnabledLayerNames     = enabled_layers.data(),
+            .enabledExtensionCount   = enabled_extensions.size(),
+            .ppEnabledExtensionNames = enabled_extensions.data(),
+            .pEnabledFeatures        = &enabled_features
         };
-        return &create_info;
     }
-
-private:
-    Data               data;
-    VkDeviceCreateInfo create_info;
 };
+typedef VulkanWrapper<VulkanDeviceCreateInfoData, VkDeviceCreateInfo>
+    VulkanDeviceCreateInfo;
 
-struct VulkanSwapchainCreateInfoKHR {
+struct VulkanSwapchainCreateInfoKHRData {
     VkSurfaceKHR                     surface;
     uint32_t                         min_image_count;
     VkFormat                         image_format;
@@ -178,9 +155,8 @@ struct VulkanSwapchainCreateInfoKHR {
     VkBool32                         clipped;
     VkSwapchainKHR                   old_swapchain;
 
-    operator const VkSwapchainCreateInfoKHR*() const {
-        static VkSwapchainCreateInfoKHR create_info;
-        create_info = {
+    inline operator const VkSwapchainCreateInfoKHR() {
+        return {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext                 = nullptr,
             .flags                 = 0,
@@ -200,20 +176,20 @@ struct VulkanSwapchainCreateInfoKHR {
             .clipped               = clipped,
             .oldSwapchain          = old_swapchain
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanSwapchainCreateInfoKHRData, VkSwapchainCreateInfoKHR>
+    VulkanSwapchainCreateInfoKHR;
 
-struct VulkanImageViewCreateInfo {
+struct VulkanImageViewCreateInfoData {
     VkImage                 image;
     VkImageViewType         view_type;
     VkFormat                format;
     VkComponentMapping      components;
     VkImageSubresourceRange subresource_range;
 
-    operator const VkImageViewCreateInfo*() const {
-        static VkImageViewCreateInfo create_info;
-        create_info = {
+    inline operator const VkImageViewCreateInfo() {
+        return {
             .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = 0,
@@ -223,11 +199,12 @@ struct VulkanImageViewCreateInfo {
             .components       = components,
             .subresourceRange = subresource_range
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanImageViewCreateInfoData, VkImageViewCreateInfo>
+    VulkanImageViewCreateInfo;
 
-struct VulkanAttachmentDescription {
+struct VulkanAttachmentDescriptionData {
     VkAttachmentDescriptionFlags flags;
     VkFormat                     format;
     VkSampleCountFlagBits        samples;
@@ -238,9 +215,8 @@ struct VulkanAttachmentDescription {
     VkImageLayout                initial_layout;
     VkImageLayout                final_layout;
 
-    operator const VkAttachmentDescription*() const {
-        static VkAttachmentDescription description;
-        description = {
+    inline operator const VkAttachmentDescription() {
+        return {
             .flags          = flags,
             .format         = format,
             .samples        = samples,
@@ -251,11 +227,12 @@ struct VulkanAttachmentDescription {
             .initialLayout  = initial_layout,
             .finalLayout    = final_layout
         };
-        return &description;
     }
 };
+typedef VulkanWrapper<VulkanAttachmentDescriptionData, VkAttachmentDescription>
+    VulkanAttachmentDescription;
 
-struct VulkanSubpassDescription {
+struct VulkanSubpassDescriptionData {
     VkSubpassDescriptionFlags          flags;
     VkPipelineBindPoint                pipeline_bind_point;
     std::vector<VkAttachmentReference> input_attachments;
@@ -264,9 +241,8 @@ struct VulkanSubpassDescription {
     VkAttachmentReference              depth_stencil_attachment;
     std::vector<uint32_t>              preserve_attachments;
 
-    operator const VkSubpassDescription*() const {
-        static VkSubpassDescription description;
-        description = {
+    inline operator const VkSubpassDescription() {
+        return {
             .flags                   = flags,
             .pipelineBindPoint       = pipeline_bind_point,
             .inputAttachmentCount    = input_attachments.size(),
@@ -278,11 +254,12 @@ struct VulkanSubpassDescription {
             .preserveAttachmentCount = preserve_attachments.size(),
             .pPreserveAttachments    = preserve_attachments.data()
         };
-        return &description;
     }
 };
+typedef VulkanWrapper<VulkanSubpassDescriptionData, VkSubpassDescription>
+    VulkanSubpassDescription;
 
-struct VulkanSubpassDependency {
+struct VulkanSubpassDependencyData {
     uint32_t             src_subpass;
     uint32_t             dst_subpass;
     VkPipelineStageFlags src_stage_mask;
@@ -291,9 +268,8 @@ struct VulkanSubpassDependency {
     VkAccessFlags        dst_access_mask;
     VkDependencyFlags    dependency_flags;
 
-    operator const VkSubpassDependency*() const {
-        static VkSubpassDependency description;
-        description = {
+    inline operator const VkSubpassDependency() {
+        return {
             .srcSubpass      = src_subpass,
             .dstSubpass      = dst_subpass,
             .srcStageMask    = src_stage_mask,
@@ -302,19 +278,18 @@ struct VulkanSubpassDependency {
             .dstAccessMask   = dst_access_mask,
             .dependencyFlags = dependency_flags
         };
-        return &description;
     }
 };
+typedef VulkanWrapper<VulkanSubpassDependencyData, VkSubpassDependency>
+    VulkanSubpassDependency;
 
-
-struct VulkanRenderPassCreateInfo {
+struct VulkanRenderPassCreateInfoData {
     std::vector<VulkanAttachmentDescription> attachments;
     std::vector<VulkanSubpassDescription>    subpasses;
     std::vector<VulkanSubpassDependency>     dependencies;
     
-    operator const VkRenderPassCreateInfo*() {
-        static VkRenderPassCreateInfo create_info;
-        create_info = {
+    inline operator const VkRenderPassCreateInfo() {
+        return {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
@@ -325,20 +300,20 @@ struct VulkanRenderPassCreateInfo {
             .dependencyCount = dependencies.size(),
             .pDependencies   = cast_vector<const VkSubpassDependency*>(dependencies)[0]
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanRenderPassCreateInfoData, VkRenderPassCreateInfo>
+    VulkanRenderPassCreateInfo;
 
-struct VulkanFramebufferCreateInfo {
+struct VulkanFramebufferCreateInfoData {
     VkRenderPass             render_pass;
     std::vector<VkImageView> attachments;
     uint32_t                 width;
     uint32_t                 height;
     uint32_t                 layers;
-    
-    operator const VkFramebufferCreateInfo*() const {
-        static VkFramebufferCreateInfo create_info;
-        create_info = {
+
+    inline operator const VkFramebufferCreateInfo() {
+        return {
             .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
@@ -349,53 +324,53 @@ struct VulkanFramebufferCreateInfo {
             .height          = height,
             .layers          = layers
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanFramebufferCreateInfoData, VkFramebufferCreateInfo>
+    VulkanFramebufferCreateInfo;
 
-struct VulkanCommandPoolCreateInfo {
+struct VulkanCommandPoolCreateInfoData {
     VkCommandPoolCreateFlags flags;
     uint32_t                 queue_family_index;
 
-    operator const VkCommandPoolCreateInfo*() const {
-        static VkCommandPoolCreateInfo create_info;
-        create_info = {
+    operator const VkCommandPoolCreateInfo() {
+        return {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = flags,
             .queueFamilyIndex = queue_family_index
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanCommandPoolCreateInfoData, VkCommandPoolCreateInfo>
+    VulkanCommandPoolCreateInfo;
 
-struct VulkanCommandBufferAllocateInfo {
+struct VulkanCommandBufferAllocateInfoData {
     VkCommandPool           command_pool;
     VkCommandBufferLevel    level;
     uint32_t                command_buffer_count;
 
-    operator const VkCommandBufferAllocateInfo*() const {
-        static VkCommandBufferAllocateInfo create_info;
-        create_info = {
+    operator const VkCommandBufferAllocateInfo() {
+        return {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext              = nullptr,
             .commandPool        = command_pool,
             .level              = level,
             .commandBufferCount = command_buffer_count
         };
-        return &create_info;
     }
 };
+typedef VulkanWrapper<VulkanCommandBufferAllocateInfoData, VkCommandBufferAllocateInfo>
+    VulkanCommandBufferAllocateInfo;
 
-struct VulkanRenderPassBeginInfo {
+struct VulkanRenderPassBeginInfoData {
     VkRenderPass              render_pass;
     VkFramebuffer             framebuffer;
     VkRect2D                  render_area;
     std::vector<VkClearValue> clear_values;
 
-    operator const VkRenderPassBeginInfo*() const {
-        static VkRenderPassBeginInfo begin_info;
-        begin_info = {
+    operator const VkRenderPassBeginInfo() {
+        return {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .pNext           = nullptr,
             .renderPass      = render_pass,
@@ -404,11 +379,12 @@ struct VulkanRenderPassBeginInfo {
             .clearValueCount = clear_values.size(),
             .pClearValues    = clear_values.data()
         };
-        return &begin_info;
     }
 };
+typedef VulkanWrapper<VulkanRenderPassBeginInfoData, VkRenderPassBeginInfo>
+    VulkanRenderPassBeginInfo;
 
-struct VulkanCommandBufferInheritanceInfo {
+struct VulkanCommandBufferInheritanceInfoData {
     VkRenderPass                   render_pass;
     uint32_t                       subpass;
     VkFramebuffer                  framebuffer;
@@ -416,9 +392,8 @@ struct VulkanCommandBufferInheritanceInfo {
     VkQueryControlFlags            query_flags;
     VkQueryPipelineStatisticFlags  pipeline_statistics;
 
-    operator const VkCommandBufferInheritanceInfo*() const {
-        static VkCommandBufferInheritanceInfo inheritance_info;
-        inheritance_info = {
+    operator const VkCommandBufferInheritanceInfo() {
+        return {
             .sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
             .pNext                = nullptr,
             .renderPass           = render_pass,
@@ -428,35 +403,35 @@ struct VulkanCommandBufferInheritanceInfo {
             .queryFlags           = query_flags,
             .pipelineStatistics   = pipeline_statistics
         };
-        return &inheritance_info;
     }
 };
+typedef VulkanWrapper<VulkanCommandBufferInheritanceInfoData, VkCommandBufferInheritanceInfo>
+    VulkanCommandBufferInheritanceInfo;
 
-struct VulkanCommandBufferBeginInfo {
+struct VulkanCommandBufferBeginInfoData {
     VkCommandBufferUsageFlags          flags;
     VulkanCommandBufferInheritanceInfo inheritance_info;
 
-    operator const VkCommandBufferBeginInfo*() const {
-        static VkCommandBufferBeginInfo begin_info;
-        begin_info = {
+    operator const VkCommandBufferBeginInfo() {
+        return {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext            = nullptr,
             .flags            = flags,
             .pInheritanceInfo = inheritance_info
         };
-        return &begin_info;
     }
 };
+typedef VulkanWrapper<VulkanCommandBufferBeginInfoData, VkCommandBufferBeginInfo>
+    VulkanCommandBufferBeginInfo;
 
-struct VulkanSubmitInfo {
+struct VulkanSubmitInfoData {
     std::vector<VkSemaphore>     wait_semaphores;
     VkPipelineStageFlags         wait_dst_stage_mask;
     std::vector<VkCommandBuffer> command_buffers;
     std::vector<VkSemaphore>     signal_semaphores;
 
-    operator const VkSubmitInfo*() const {
-        static VkSubmitInfo submit_info;
-        submit_info = {
+    operator const VkSubmitInfo() {
+        return {
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                = nullptr,
             .waitSemaphoreCount   = wait_semaphores.size(),
@@ -467,19 +442,19 @@ struct VulkanSubmitInfo {
             .signalSemaphoreCount = signal_semaphores.size(),
             .pSignalSemaphores    = signal_semaphores.data(),
         };
-        return &submit_info;
     }
 };
+typedef VulkanWrapper<VulkanSubmitInfoData, VkSubmitInfo>
+    VulkanSubmitInfo;
 
-struct VulkanPresentInfoKHR {
+struct VulkanPresentInfoKHRData {
     std::vector<VkSemaphore>    wait_semaphores;
     std::vector<VkSwapchainKHR> swapchains;
     std::vector<uint32_t>       image_indices;
 
-    operator const VkPresentInfoKHR*() const {
-        static VkPresentInfoKHR present_info;
+    operator const VkPresentInfoKHR() {
         assert(image_indices.size() == swapchains.size());
-        present_info = {
+        return {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = nullptr,
             .waitSemaphoreCount = wait_semaphores.size(),
@@ -489,9 +464,308 @@ struct VulkanPresentInfoKHR {
             .pImageIndices      = image_indices.data(),
             .pResults           = nullptr
         };
-        return &present_info;
     }
 };
+typedef VulkanWrapper<VulkanPresentInfoKHRData, VkPresentInfoKHR>
+    VulkanPresentInfoKHR;
+
+struct VulkanPipelineLayoutCreateInfoData {
+    std::vector<VkDescriptorSetLayout> set_layouts;
+    std::vector<VkPushConstantRange>   push_constant_ranges;
+
+    operator const VkPipelineLayoutCreateInfo() {
+        return {
+            .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .pNext                  = nullptr,
+            .flags                  = 0,
+            .setLayoutCount         = set_layouts.size(),
+            .pSetLayouts            = set_layouts.data(),
+            .pushConstantRangeCount = push_constant_ranges.size(),
+            .pPushConstantRanges    = push_constant_ranges.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineLayoutCreateInfoData, VkPipelineLayoutCreateInfo>
+    VulkanPipelineLayoutCreateInfo;
+
+struct VulkanSpecializationInfoData {
+    std::vector<VkSpecializationMapEntry> map_entries;
+    std::vector<void*>                    data;
+
+    operator const VkSpecializationInfo() {
+        return {
+            .mapEntryCount = map_entries.size(),
+            .pMapEntries   = map_entries.data(),
+            .dataSize      = data.size(),
+            .pData         = data.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanSpecializationInfoData, VkSpecializationInfo>
+    VulkanSpecializationInfo;
+
+struct VulkanPipelineShaderStageCreateInfoData {
+    VkShaderStageFlagBits    stage;
+    Deleter<VkShaderModule>  module;
+    const char*              name;
+    VulkanSpecializationInfo specialization_info;
+
+    operator const VkPipelineShaderStageCreateInfo() {
+        return {
+            .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext               = nullptr,
+            .flags               = 0,
+            .stage               = stage,
+            .module              = module,
+            .pName               = name,
+            .pSpecializationInfo = specialization_info
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineShaderStageCreateInfoData, VkPipelineShaderStageCreateInfo>
+    VulkanPipelineShaderStageCreateInfo;
+
+struct VulkanPipelineVertexInputStateCreateInfoData {
+    std::vector<VkVertexInputBindingDescription>   vertex_binding_descriptions;
+    std::vector<VkVertexInputAttributeDescription> vertex_attribute_descriptions;
+
+    operator const VkPipelineVertexInputStateCreateInfo() {
+        return {
+            .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .pNext                           = nullptr,
+            .flags                           = 0,
+            .vertexBindingDescriptionCount   = vertex_binding_descriptions.size(),
+            .pVertexBindingDescriptions      = vertex_binding_descriptions.data(),
+            .vertexAttributeDescriptionCount = vertex_attribute_descriptions.size(),
+            .pVertexAttributeDescriptions    = vertex_attribute_descriptions.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineVertexInputStateCreateInfoData, VkPipelineVertexInputStateCreateInfo>
+    VulkanPipelineVertexInputStateCreateInfo;
+
+struct VulkanPipelineInputAssemblyStateCreateInfoData {
+    VkPrimitiveTopology topology;
+    VkBool32            primitive_restart_enable;
+
+    operator const VkPipelineInputAssemblyStateCreateInfo() {
+        return {
+            .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .pNext                  = nullptr,
+            .flags                  = 0,
+            .topology               = topology,
+            .primitiveRestartEnable = primitive_restart_enable
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineInputAssemblyStateCreateInfoData, VkPipelineInputAssemblyStateCreateInfo>
+    VulkanPipelineInputAssemblyStateCreateInfo;
+
+struct VulkanPipelineTessellationStateCreateInfoData {
+    uint32_t patch_control_points;
+
+    operator const VkPipelineTessellationStateCreateInfo() {
+        return {
+            .sType              = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+            .pNext              = nullptr,
+            .flags              = 0,
+            .patchControlPoints = patch_control_points
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineTessellationStateCreateInfoData, VkPipelineTessellationStateCreateInfo>
+    VulkanPipelineTessellationStateCreateInfo;
+
+struct VulkanPipelineViewportStateCreateInfoData {
+    std::vector<VkViewport> viewports;
+    std::vector<VkRect2D>   scissors;
+
+    operator const VkPipelineViewportStateCreateInfo() {
+        return {
+            .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .pNext         = nullptr,
+            .flags         = 0,
+            .viewportCount = viewports.size(),
+            .pViewports    = viewports.data(),
+            .scissorCount  = scissors.size(),
+            .pScissors     = scissors.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineViewportStateCreateInfoData, VkPipelineViewportStateCreateInfo>
+    VulkanPipelineViewportStateCreateInfo;
+
+struct VulkanPipelineRasterizationStateCreateInfoData {
+    VkBool32        depth_clamp_enable;
+    VkBool32        rasterizer_discard_enable;
+    VkPolygonMode   polygon_mode;
+    VkCullModeFlags cull_mode;
+    VkFrontFace     front_face;
+    VkBool32        depth_bias_enable;
+    float           depth_bias_constant_factor;
+    float           depth_bias_clamp;
+    float           depth_bias_slope_factor;
+    float           line_width;
+
+    operator const VkPipelineRasterizationStateCreateInfo() {
+        return {
+            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            .pNext                   = nullptr,
+            .flags                   = 0,
+            .depthClampEnable        = depth_clamp_enable,
+            .rasterizerDiscardEnable = rasterizer_discard_enable,
+            .polygonMode             = polygon_mode,
+            .cullMode                = cull_mode,
+            .frontFace               = front_face,
+            .depthBiasEnable         = depth_bias_enable,
+            .depthBiasConstantFactor = depth_bias_constant_factor,
+            .depthBiasClamp          = depth_bias_clamp,
+            .depthBiasSlopeFactor    = depth_bias_slope_factor,
+            .lineWidth               = line_width
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineRasterizationStateCreateInfoData, VkPipelineRasterizationStateCreateInfo>
+    VulkanPipelineRasterizationStateCreateInfo;
+
+struct VulkanPipelineMultisampleStateCreateInfoData {
+    VkSampleCountFlagBits rasterization_samples;
+    VkBool32              sample_shading_enable;
+    float                 min_sample_shading;
+    VkSampleMask          sample_mask;
+    VkBool32              alpha_to_coverage_enable;
+    VkBool32              alpha_to_one_enable;
+
+    operator const VkPipelineMultisampleStateCreateInfo() {
+        return {
+            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .rasterizationSamples  = rasterization_samples,
+            .sampleShadingEnable   = sample_shading_enable,
+            .minSampleShading      = min_sample_shading,
+            .pSampleMask           = &sample_mask,
+            .alphaToCoverageEnable = alpha_to_coverage_enable,
+            .alphaToOneEnable      = alpha_to_one_enable
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineMultisampleStateCreateInfoData, VkPipelineMultisampleStateCreateInfo>
+    VulkanPipelineMultisampleStateCreateInfo;
+
+struct VulkanPipelineDepthStencilStateCreateInfoData {
+    VkBool32         depth_test_enable;
+    VkBool32         depth_write_enable;
+    VkCompareOp      depth_compare_op;
+    VkBool32         depth_bounds_test_enable;
+    VkBool32         stencil_test_enable;
+    VkStencilOpState front;
+    VkStencilOpState back;
+    float            min_depth_bounds;
+    float            max_depth_bounds;
+
+    operator const VkPipelineDepthStencilStateCreateInfo() {
+        return {
+            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = 0,
+            .depthTestEnable       = depth_test_enable,
+            .depthWriteEnable      = depth_write_enable,
+            .depthCompareOp        = depth_compare_op,
+            .depthBoundsTestEnable = depth_bounds_test_enable,
+            .stencilTestEnable     = stencil_test_enable,
+            .front                 = front,
+            .back                  = back,
+            .minDepthBounds        = min_depth_bounds,
+            .maxDepthBounds        = max_depth_bounds
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineDepthStencilStateCreateInfoData, VkPipelineDepthStencilStateCreateInfo>
+    VulkanPipelineDepthStencilStateCreateInfo;
+
+struct VulkanPipelineColorBlendStateCreateInfoData {
+    VkBool32                                         logic_op_enable;
+    VkLogicOp                                        logic_op;
+    std::vector<VkPipelineColorBlendAttachmentState> attachments;
+    std::array<float, 4>                             blend_constants;
+
+    operator const VkPipelineColorBlendStateCreateInfo() {
+        VkPipelineColorBlendStateCreateInfo create_info = {
+            .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .pNext           = nullptr,
+            .flags           = 0,
+            .logicOpEnable   = logic_op_enable,
+            .logicOp         = logic_op,
+            .attachmentCount = attachments.size(),
+            .pAttachments    = attachments.data(),
+        };
+        std::copy(blend_constants.begin(), blend_constants.end(), create_info.blendConstants);
+        return create_info;
+    }
+};
+typedef VulkanWrapper<VulkanPipelineColorBlendStateCreateInfoData, VkPipelineColorBlendStateCreateInfo>
+    VulkanPipelineColorBlendStateCreateInfo;
+
+struct VulkanPipelineDynamicStateCreateInfoData {
+    std::vector<VkDynamicState> dynamic_states;
+
+    operator const VkPipelineDynamicStateCreateInfo() {
+        return {
+            .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .pNext             = nullptr,
+            .flags             = 0,
+            .dynamicStateCount = dynamic_states.size(),
+            .pDynamicStates    = dynamic_states.data(),
+        };
+    }
+};
+typedef VulkanWrapper<VulkanPipelineDynamicStateCreateInfoData, VkPipelineDynamicStateCreateInfo>
+    VulkanPipelineDynamicStateCreateInfo;
+
+struct VulkanGraphicsPipelineCreateInfoData {
+    std::vector<VulkanPipelineShaderStageCreateInfo> stages;
+    VulkanPipelineVertexInputStateCreateInfo         vertex_input_state;
+    VulkanPipelineInputAssemblyStateCreateInfo       input_assembly_state;
+    VulkanPipelineTessellationStateCreateInfo        tessellation_state;
+    VulkanPipelineViewportStateCreateInfo            viewport_state;
+    VulkanPipelineRasterizationStateCreateInfo       rasterization_state;
+    VulkanPipelineMultisampleStateCreateInfo         multisample_state;
+    VulkanPipelineDepthStencilStateCreateInfo        depth_stencil_state;
+    VulkanPipelineColorBlendStateCreateInfo          color_blend_state;
+    VulkanPipelineDynamicStateCreateInfo             dynamic_state;
+    VkPipelineLayout                                 layout;
+    VkRenderPass                                     render_pass;
+    uint32_t                                         subpass;
+    VkPipeline                                       base_pipeline_handle;
+    int32_t                                          base_pipeline_index;
+
+    operator const VkGraphicsPipelineCreateInfo() {
+        return {
+            .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+            .pNext               = nullptr,
+            .flags               = 0,
+            .stageCount          = stages.size(),
+            .pStages             = cast_vector<const VkPipelineShaderStageCreateInfo*>(stages)[0],
+            .pVertexInputState   = vertex_input_state,
+            .pInputAssemblyState = input_assembly_state,
+            .pTessellationState  = tessellation_state,
+            .pViewportState      = viewport_state,
+            .pRasterizationState = rasterization_state,
+            .pMultisampleState   = multisample_state,
+            .pDepthStencilState  = depth_stencil_state,
+            .pColorBlendState    = color_blend_state,
+            .pDynamicState       = dynamic_state,
+            .layout              = layout,
+            .renderPass          = render_pass,
+            .subpass             = subpass,
+            .basePipelineHandle  = base_pipeline_handle,
+            .basePipelineIndex   = base_pipeline_index
+        };
+    }
+};
+typedef VulkanWrapper<VulkanGraphicsPipelineCreateInfoData, VkGraphicsPipelineCreateInfo>
+    VulkanGraphicsPipelineCreateInfo;
 
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
@@ -621,24 +895,31 @@ inline Deleter<VkRenderPass> vulkan_create_render_pass(VulkanRenderPassCreateInf
     );
 }
 
-inline Deleter<VkPipelineLayout> vulkan_create_pipeline_layout(const VkPipelineLayoutCreateInfo& create_info, VkDevice device) {
+inline Deleter<VkPipelineLayout> vulkan_create_pipeline_layout(VulkanPipelineLayoutCreateInfo&& create_info, VkDevice device) {
     return vulkan_create<VkPipelineLayout>(
         vkCreatePipelineLayout,
         vkDestroyPipelineLayout,
         device,
         "Failed to create pipeline layout.",
-        &create_info
+        create_info
     );
 }
 
 inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
-    const std::vector<VkGraphicsPipelineCreateInfo>& create_infos,
-    VkPipelineCache                                  pipeline_cache,
-    VkDevice                                         device) {
+    const std::vector<VulkanGraphicsPipelineCreateInfo>& create_infos,
+    VkPipelineCache                                      pipeline_cache,
+    VkDevice                                             device) {
 
     VkPipeline* pipeline_pointer;
     vulkan_assert(
-        vkCreateGraphicsPipelines(device, pipeline_cache, create_infos.size(), create_infos.data(), nullptr, pipeline_pointer),
+        vkCreateGraphicsPipelines(
+            device,
+            pipeline_cache,
+            create_infos.size(),
+            cast_vector<const VkGraphicsPipelineCreateInfo*>(create_infos)[0],
+            nullptr,
+            pipeline_pointer
+        ),
         "Failed to create pipelines."
     );
 
@@ -651,9 +932,9 @@ inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
 }
 
 inline Deleter<VkPipeline> vulkan_create_pipeline(
-    const VkGraphicsPipelineCreateInfo& create_info,
-    VkPipelineCache                     pipeline_cache,
-    VkDevice                            device) {
+    const VulkanGraphicsPipelineCreateInfo& create_info,
+    VkPipelineCache                         pipeline_cache,
+    VkDevice                                device) {
 
     return vulkan_create<VkPipeline>(
         vkCreateGraphicsPipelines,
@@ -662,7 +943,7 @@ inline Deleter<VkPipeline> vulkan_create_pipeline(
         "Failed to create pipeline.",
         pipeline_cache,
         1,
-        &create_info
+        create_info
     );
 }
 
@@ -739,7 +1020,7 @@ inline Deleter<VkCommandPool> vulkan_create_command_pool(VulkanCommandPoolCreate
 }
 
 inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanCommandBufferAllocateInfo&& allocate_info, VkDevice device) {
-    std::vector<VkCommandBuffer> command_buffers{allocate_info.command_buffer_count};
+    std::vector<VkCommandBuffer> command_buffers{allocate_info.data().commandBufferCount};
     vulkan_assert(
         vkAllocateCommandBuffers(device, allocate_info, command_buffers.data()),
         "Failed to allocate command buffers."
