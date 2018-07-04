@@ -7,7 +7,12 @@
 
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <set>
 #include <vector>
@@ -15,6 +20,12 @@
 struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
+};
+
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
 };
 
 VkBool32 debug_callback(
@@ -257,6 +268,25 @@ int main() {
             }
         }}, device);
 
+        // Create descriptor set layout
+        const auto descriptor_set_layout = vulkan_create_descriptor_set_layout({{
+            .bindings = {
+                {{
+                    .binding         = 0,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .descriptorCount = 1,
+                    .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT
+                }}
+            }
+        }}, device);
+
+        // Create pipeline layout
+        const auto pipeline_layout = vulkan_create_pipeline_layout({{
+            .set_layouts = {
+                descriptor_set_layout
+            }
+        }}, device);
+
         // Create pipelines
         const auto pipeline = vulkan_create_pipeline({{
             .stages = {
@@ -334,7 +364,7 @@ int main() {
                 .rasterizer_discard_enable  = VK_FALSE,
                 .polygon_mode               = VK_POLYGON_MODE_FILL,
                 .cull_mode                  = VK_CULL_MODE_BACK_BIT,
-                .front_face                 = VK_FRONT_FACE_CLOCKWISE,
+                .front_face                 = VK_FRONT_FACE_COUNTER_CLOCKWISE,
                 .depth_bias_enable          = VK_FALSE,
                 .depth_bias_constant_factor = 0.0f,
                 .depth_bias_clamp           = 0.0f,
@@ -368,8 +398,7 @@ int main() {
                 .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
             }},
 
-            .layout = vulkan_create_pipeline_layout({{
-            }}, device),
+            .layout = pipeline_layout,
 
             .render_pass = render_pass,
         }}, VK_NULL_HANDLE, device);
@@ -477,6 +506,8 @@ int main() {
 
             vulkan_cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
                 {
+                    .srcOffset = 0,
+                    .dstOffset = 0,
                     .size = vertex_buffer_size
                 }
             });
@@ -565,6 +596,8 @@ int main() {
 
             vulkan_cmd_copy_buffer(command_buffer, staging_buffer, index_buffer, {
                 {
+                    .srcOffset = 0,
+                    .dstOffset = 0,
                     .size = index_buffer_size
                 }
             });
@@ -582,6 +615,68 @@ int main() {
             vkQueueWaitIdle(graphics_queue);
 
             vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+        }
+
+        // Create uniform buffers
+        std::vector<Deleter<VkBuffer>>       uniform_buffers;
+        std::vector<Deleter<VkDeviceMemory>> uniform_buffer_memories;
+        for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
+            // Create uniform buffer
+            uniform_buffers.emplace_back(vulkan_create_buffer({{
+                .size         = sizeof(UniformBufferObject),
+                .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
+            }}, device));
+
+            // Find memory requirements for uniform buffer
+            vkGetBufferMemoryRequirements(device, uniform_buffers[i], &memory_requirements);
+
+            // Allocate memory for uniform buffer
+            uniform_buffer_memories.emplace_back(vulkan_allocate_memory({{
+                .allocation_size   = memory_requirements.size,
+                .memory_type_index = find_memory_type(
+                    physical_device,
+                    memory_requirements.memoryTypeBits,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                )
+            }}, device));
+
+            // Bind memory to uniform buffer
+            vkBindBufferMemory(device, uniform_buffers[i], uniform_buffer_memories[i], 0);
+        }
+
+        // Create descriptor pool
+        const auto descriptor_pool = vulkan_create_descriptor_pool({{
+            .pool_sizes = {
+                {
+                    .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .descriptorCount = static_cast<uint32_t>(swapchain_image_views.size())
+                }
+            },
+            .max_sets = static_cast<uint32_t>(swapchain_image_views.size())
+        }}, device);
+
+        // Allocate descriptor sets
+        const auto descriptor_sets = vulkan_allocate_descriptor_sets({{
+            .descriptor_pool = descriptor_pool,
+            .set_layouts     = {swapchain_image_views.size(), descriptor_set_layout}
+        }}, device);
+
+        for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
+            vulkan_update_descriptor_sets(device, {
+                {{
+                    .dst_set           = descriptor_sets[i],
+                    .dst_binding       = 0,
+                    .dst_array_element = 0,
+                    .descriptor_type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .descriptor_count  = 1,
+                    .buffer_info       = {
+                        .buffer = uniform_buffers[i],
+                        .offset = 0,
+                        .range = sizeof(UniformBufferObject) // VK_WHOLE_SIZE
+                    }
+                }}
+            }, {});
         }
 
         // Allocate command buffers
@@ -620,6 +715,9 @@ int main() {
             // Bind index buffer
             vulkan_cmd_bind_index_buffer(command_buffers[i], index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
+            // Bind descriptor sets
+            vulkan_cmd_bind_descriptor_sets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, { descriptor_sets[i] }, {});
+
             // Draw
             vkCmdDrawIndexed(command_buffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
@@ -648,6 +746,28 @@ int main() {
             // Get next image from swapchain
             const auto image_index = vulkan_acquire_next_image(device, swapchain, image_available_semaphores[current_frame]);
             
+            // Update uniform buffer
+            {
+                // Calculate delta time
+                static auto start_time = std::chrono::high_resolution_clock::now();
+                const auto current_time = std::chrono::high_resolution_clock::now();
+                float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+                // Define uniform buffer object
+                UniformBufferObject ubo = {
+                    .model      = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+                    .view       = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+                    .projection = glm::perspective(glm::radians(45.0f), surface_extent.width / (float) surface_extent.height, 0.1f, 10.0f)
+                };
+                ubo.projection[1][1] *= -1;
+
+                // Copy uniform buffer object to uniform buffer
+                void* data;
+                vkMapMemory(device, uniform_buffer_memories[image_index], 0, sizeof(ubo), 0, &data);
+                memcpy(data, &ubo, sizeof(ubo));
+                vkUnmapMemory(device, uniform_buffer_memories[image_index]);
+            }
+
             // Submit command buffer to graphics queue
             vulkan_queue_submit({
                 {{

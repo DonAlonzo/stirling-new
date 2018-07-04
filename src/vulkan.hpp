@@ -9,8 +9,8 @@
 #include <vector>
 
 template<typename To, typename From>
-inline std::vector<To> cast_vector(const std::vector<From>& from) {
-    return std::vector<To>{from.begin(), from.end()};
+inline To cast_vector(const std::vector<From>& from) {
+    return from.size() > 0 ? std::vector<To>{from.begin(), from.end()}[0] : nullptr;
 }
 
 struct QueueFamilyIndices {
@@ -113,7 +113,7 @@ struct VulkanDeviceCreateInfoData {
         return {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .queueCreateInfoCount    = static_cast<uint32_t>(queues.size()),
-            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
+            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues),
             .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
             .ppEnabledLayerNames     = enabled_layers.data(),
             .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
@@ -274,11 +274,11 @@ struct VulkanRenderPassCreateInfoData {
         return {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
-            .pAttachments    = cast_vector<const VkAttachmentDescription*>(attachments)[0],
+            .pAttachments    = cast_vector<const VkAttachmentDescription*>(attachments),
             .subpassCount    = static_cast<uint32_t>(subpasses.size()),
-            .pSubpasses      = cast_vector<const VkSubpassDescription*>(subpasses)[0],
+            .pSubpasses      = cast_vector<const VkSubpassDescription*>(subpasses),
             .dependencyCount = static_cast<uint32_t>(dependencies.size()),
-            .pDependencies   = cast_vector<const VkSubpassDependency*>(dependencies)[0]
+            .pDependencies   = cast_vector<const VkSubpassDependency*>(dependencies)
         };
     }
 };
@@ -338,6 +338,23 @@ struct VulkanCommandBufferAllocateInfoData {
 };
 typedef VulkanWrapper<VulkanCommandBufferAllocateInfoData, VkCommandBufferAllocateInfo>
     VulkanCommandBufferAllocateInfo;
+
+struct VulkanDescriptorSetAllocateInfoData {
+    VkDescriptorPool                   descriptor_pool;
+    std::vector<VkDescriptorSetLayout> set_layouts;
+
+    inline operator const VkDescriptorSetAllocateInfo() {
+        return {
+            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .descriptorPool     = descriptor_pool,
+            .descriptorSetCount = static_cast<uint32_t>(set_layouts.size()),
+            .pSetLayouts        = set_layouts.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanDescriptorSetAllocateInfoData, VkDescriptorSetAllocateInfo>
+    VulkanDescriptorSetAllocateInfo;
 
 struct VulkanRenderPassBeginInfoData {
     VkRenderPass              render_pass;
@@ -438,6 +455,22 @@ struct VulkanPresentInfoKHRData {
 };
 typedef VulkanWrapper<VulkanPresentInfoKHRData, VkPresentInfoKHR>
     VulkanPresentInfoKHR;
+
+struct VulkanDescriptorSetLayoutCreateInfoData {
+    VkDescriptorSetLayoutCreateFlags          flags;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+    inline operator const VkDescriptorSetLayoutCreateInfo() {
+        return {
+            .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .flags        = flags,
+            .bindingCount = static_cast<uint32_t>(bindings.size()),
+            .pBindings    = bindings.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanDescriptorSetLayoutCreateInfoData, VkDescriptorSetLayoutCreateInfo>
+    VulkanDescriptorSetLayoutCreateInfo;
 
 struct VulkanPipelineLayoutCreateInfoData {
     std::vector<VkDescriptorSetLayout> set_layouts;
@@ -692,7 +725,7 @@ struct VulkanGraphicsPipelineCreateInfoData {
         return {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount          = static_cast<uint32_t>(stages.size()),
-            .pStages             = cast_vector<const VkPipelineShaderStageCreateInfo*>(stages)[0],
+            .pStages             = cast_vector<const VkPipelineShaderStageCreateInfo*>(stages),
             .pVertexInputState   = vertex_input_state,
             .pInputAssemblyState = input_assembly_state,
             .pTessellationState  = tessellation_state,
@@ -747,6 +780,78 @@ struct VulkanMemoryAllocateInfoData {
 };
 typedef VulkanWrapper<VulkanMemoryAllocateInfoData, VkMemoryAllocateInfo>
     VulkanMemoryAllocateInfo;
+
+struct VulkanDescriptorPoolCreateInfoData {
+    VkDescriptorPoolCreateFlags       flags;
+    uint32_t                          max_sets;
+    std::vector<VkDescriptorPoolSize> pool_sizes;
+
+    inline operator const VkDescriptorPoolCreateInfo() {
+        return {
+            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .flags         = flags,
+            .maxSets       = max_sets,
+            .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+            .pPoolSizes    = pool_sizes.data()
+        };
+    }
+};
+typedef VulkanWrapper<VulkanDescriptorPoolCreateInfoData, VkDescriptorPoolCreateInfo>
+    VulkanDescriptorPoolCreateInfo;
+
+struct VulkanWriteDescriptorSetData {
+    VkDescriptorSet        dst_set;
+    uint32_t               dst_binding;
+    uint32_t               dst_array_element;
+    uint32_t               descriptor_count;
+    VkDescriptorType       descriptor_type;
+    VkDescriptorImageInfo  image_info;
+    VkDescriptorBufferInfo buffer_info;
+    VkBufferView*          texel_buffer_view;
+
+    inline operator const VkWriteDescriptorSet() {
+        return {
+            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext            = nullptr,
+            .dstSet           = dst_set,
+            .dstBinding       = dst_binding,
+            .dstArrayElement  = dst_array_element,
+            .descriptorCount  = descriptor_count,
+            .descriptorType   = descriptor_type,
+            .pImageInfo       = &image_info,
+            .pBufferInfo      = &buffer_info,
+            .pTexelBufferView = texel_buffer_view
+        };
+    }
+};
+typedef VulkanWrapper<VulkanWriteDescriptorSetData, VkWriteDescriptorSet>
+    VulkanWriteDescriptorSet;
+
+struct VulkanCopyDescriptorSetData {
+    VkDescriptorSet    src_set;
+    uint32_t           src_binding;
+    uint32_t           src_array_element;
+    VkDescriptorSet    dst_set;
+    uint32_t           dst_binding;
+    uint32_t           dst_array_element;
+    uint32_t           descriptor_count;
+
+    inline operator const VkCopyDescriptorSet() {
+        return {
+            .sType           = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
+            .pNext           = nullptr,
+            .srcSet          = src_set,
+            .srcBinding      = src_binding,
+            .srcArrayElement = src_array_element,
+            .dstSet          = dst_set,
+            .dstBinding      = dst_binding,
+            .dstArrayElement = dst_array_element,
+            .descriptorCount = descriptor_count
+        };
+    }
+};
+typedef VulkanWrapper<VulkanCopyDescriptorSetData, VkCopyDescriptorSet>
+    VulkanCopyDescriptorSet;
 
 inline void vulkan_assert(VkResult result, const char* assertion_message) {
     switch (result) {
@@ -859,8 +964,6 @@ inline Deleter<VkShaderModule> vulkan_create_shader_module(const char* file_name
     const auto code = read_file(file_name);
     return vulkan_create_shader_module({
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .pNext    = nullptr,
-        .flags    = 0,
         .codeSize = code.size(),
         .pCode    = reinterpret_cast<const uint32_t*>(code.data())
     }, device);
@@ -872,6 +975,16 @@ inline Deleter<VkRenderPass> vulkan_create_render_pass(VulkanRenderPassCreateInf
         vkDestroyRenderPass,
         device,
         "Failed to create render pass.",
+        create_info
+    );
+}
+
+inline Deleter<VkDescriptorSetLayout> vulkan_create_descriptor_set_layout(VulkanDescriptorSetLayoutCreateInfo&& create_info, VkDevice device) {
+    return vulkan_create<VkDescriptorSetLayout>(
+        vkCreateDescriptorSetLayout,
+        vkDestroyDescriptorSetLayout,
+        device,
+        "Failed to create descriptor set layout.",
         create_info
     );
 }
@@ -897,7 +1010,7 @@ inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
             device,
             pipeline_cache,
             create_infos.size(),
-            cast_vector<const VkGraphicsPipelineCreateInfo*>(create_infos)[0],
+            cast_vector<const VkGraphicsPipelineCreateInfo*>(create_infos),
             nullptr,
             pipeline_pointer
         ),
@@ -951,8 +1064,6 @@ inline Deleter<VkSemaphore> vulkan_create_semaphore(const VkSemaphoreCreateInfo&
 inline Deleter<VkSemaphore> vulkan_create_semaphore(VkDevice device) {
     return vulkan_create_semaphore({
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0
     }, device);
 }
 
@@ -977,7 +1088,6 @@ inline Deleter<VkFence> vulkan_create_fence(const VkFenceCreateInfo& create_info
 inline Deleter<VkFence> vulkan_create_fence(VkDevice device, bool signaled = false) {
     return vulkan_create_fence({
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .pNext = nullptr,
         .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0u
     }, device);
 }
@@ -1020,6 +1130,25 @@ inline Deleter<VkDeviceMemory> vulkan_allocate_memory(VulkanMemoryAllocateInfo&&
     );
 }
 
+inline Deleter<VkDescriptorPool> vulkan_create_descriptor_pool(VulkanDescriptorPoolCreateInfo&& create_info, VkDevice device) {
+    return vulkan_create<VkDescriptorPool>(
+        vkCreateDescriptorPool,
+        vkDestroyDescriptorPool,
+        device,
+        "Failed to create descriptor pool.",
+        create_info
+    );
+}
+
+inline std::vector<VkDescriptorSet> vulkan_allocate_descriptor_sets(VulkanDescriptorSetAllocateInfo&& allocate_info, VkDevice device) {
+    std::vector<VkDescriptorSet> descriptor_sets{allocate_info.data().descriptorSetCount};
+    vulkan_assert(
+        vkAllocateDescriptorSets(device, allocate_info, descriptor_sets.data()),
+        "Failed to alocate descriptor sets."
+    );
+    return descriptor_sets;
+}
+
 inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanCommandBufferAllocateInfo&& allocate_info, VkDevice device) {
     std::vector<VkCommandBuffer> command_buffers{allocate_info.data().commandBufferCount};
     vulkan_assert(
@@ -1027,6 +1156,20 @@ inline std::vector<VkCommandBuffer> vulkan_allocate_command_buffers(VulkanComman
         "Failed to allocate command buffers."
     );
     return command_buffers;
+}
+
+inline void vulkan_update_descriptor_sets(
+    VkDevice                                     device,
+    const std::vector<VulkanWriteDescriptorSet>& descriptor_writes,
+    const std::vector<VulkanCopyDescriptorSet>&  descriptor_copies) {
+
+    vkUpdateDescriptorSets(
+        device,
+        static_cast<uint32_t>(descriptor_writes.size()),
+        cast_vector<const VkWriteDescriptorSet*>(descriptor_writes),
+        static_cast<uint32_t>(descriptor_copies.size()),
+        cast_vector<const VkCopyDescriptorSet*>(descriptor_copies)
+    );
 }
 
 inline void vulkan_cmd_copy_buffer(
@@ -1071,6 +1214,26 @@ inline void vulkan_cmd_bind_index_buffer(
         buffer,
         offset,
         index_type
+    );
+}
+
+inline void vulkan_cmd_bind_descriptor_sets(
+    VkCommandBuffer              command_buffer,
+    VkPipelineBindPoint          pipeline_bind_point,
+    VkPipelineLayout             layout,
+    uint32_t                     first_set,
+    std::vector<VkDescriptorSet> descriptor_sets,
+    std::vector<uint32_t>        dynamic_offsets) {
+
+    vkCmdBindDescriptorSets(
+        command_buffer,
+        pipeline_bind_point,
+        layout,
+        first_set,
+        static_cast<uint32_t>(descriptor_sets.size()),
+        descriptor_sets.data(),
+        static_cast<uint32_t>(dynamic_offsets.size()),
+        dynamic_offsets.data()
     );
 }
 
@@ -1154,7 +1317,7 @@ inline void vulkan_queue_submit(std::vector<VulkanSubmitInfo>&& submit_infos, Vk
         vkQueueSubmit(
             queue,
             submit_infos.size(),
-            cast_vector<const VkSubmitInfo*>(submit_infos)[0],
+            cast_vector<const VkSubmitInfo*>(submit_infos),
             fence
         ),
         "Failed to submit to queue."

@@ -1,9 +1,9 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 fragColor;
+layout(location = 0) in vec3 frag_color;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 out_color;
 
 float rand(vec2 n) { 
     return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
@@ -17,7 +17,8 @@ float noise(vec2 n) {
 }
 
 void main() {
-    vec2 coord = (gl_FragCoord.xy - vec2(400, 300)) / vec2(400, 300);
-    float val = coord.x * coord.x + coord.y * coord.y;
-    outColor = vec4(fragColor * noise(gl_FragCoord.xy) / val, 1.0);
+    //vec2 coord = (gl_FragCoord.xy - vec2(400, 300)) / vec2(400, 300);
+    //float val = coord.x * coord.x + coord.y * coord.y;
+    //out_color = vec4(frag_color * noise(gl_FragCoord.xy) / val, 1.0);
+    out_color = vec4(frag_color, 1.0);
 }
