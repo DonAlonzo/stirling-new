@@ -12,6 +12,11 @@
 #include <set>
 #include <vector>
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+};
+
 VkBool32 debug_callback(
     VkDebugReportFlagsEXT      flags,
     VkDebugReportObjectTypeEXT object_type,
@@ -227,8 +232,6 @@ int main() {
             .subpasses = {
                 {{
                     .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-                    // Color attachments
                     .color_attachments = {
                         {
                             .attachment = 0,
@@ -259,27 +262,46 @@ int main() {
             .stages = {
                 // Vertex shader stage
                 {{
-                    .stage               = VK_SHADER_STAGE_VERTEX_BIT,
-                    .module              = vulkan_create_shader_module("vert.spv", device),
-                    .name                = "main",
+                    .stage  = VK_SHADER_STAGE_VERTEX_BIT,
+                    .module = vulkan_create_shader_module("vert.spv", device),
+                    .name   = "main",
                 }},
                 // Geometry shader stage
                 {{
-                    .stage               = VK_SHADER_STAGE_GEOMETRY_BIT,
-                    .module              = vulkan_create_shader_module("geom.spv", device),
-                    .name                = "main",
+                    .stage  = VK_SHADER_STAGE_GEOMETRY_BIT,
+                    .module = vulkan_create_shader_module("geom.spv", device),
+                    .name   = "main",
                 }},
                 // Fragment shader stage
                 {{
-                    .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
-                    .module              = vulkan_create_shader_module("frag.spv", device),
-                    .name                = "main",
+                    .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .module = vulkan_create_shader_module("frag.spv", device),
+                    .name   = "main",
                 }}
             },
 
             .vertex_input_state = {{
-                .vertex_binding_descriptions = Vertex::get_binding_descriptions(),
-                .vertex_attribute_descriptions = Vertex::get_attribute_descriptions()
+                .vertex_binding_descriptions = {
+                    {
+                        .binding   = 0,
+                        .stride    = sizeof(Vertex),
+                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+                    }
+                },
+                .vertex_attribute_descriptions = {
+                    {
+                        .location = 0,
+                        .binding  = 0,
+                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                        .offset   = offsetof(Vertex, position)
+                    },
+                    {
+                        .location = 1,
+                        .binding  = 0,
+                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                        .offset   = offsetof(Vertex, color)
+                    }
+                }
             }},
 
             .input_assembly_state = {{
@@ -321,18 +343,12 @@ int main() {
             }},
 
             .multisample_state = {{
-                .rasterization_samples    = VK_SAMPLE_COUNT_1_BIT,
-                .sample_shading_enable    = VK_FALSE,
-                .min_sample_shading       = 1.0f,
-                .sample_mask              = -1u,
-                .alpha_to_coverage_enable = VK_FALSE,
-                .alpha_to_one_enable      = VK_FALSE
+                .rasterization_samples = VK_SAMPLE_COUNT_1_BIT,
+                .min_sample_shading    = 1.0f,
             }},
 
             .color_blend_state = {{
                 .logic_op_enable = VK_FALSE,
-                .logic_op        = VK_LOGIC_OP_COPY,
-
                 .attachments = {
                     {{
                         .blendEnable         = VK_FALSE,
@@ -380,9 +396,15 @@ int main() {
 
         // Create vertices
         const std::vector<Vertex> vertices = {
-            {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f , 1.0f}},
+            {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f , 1.0f}}
+        };
+
+        // Create indices
+        const std::vector<uint16_t> indices = {
+            0, 1, 2, 2, 3, 0
         };
 
         // Calculate vertex buffer size
@@ -390,10 +412,9 @@ int main() {
 
         // Create vertex buffer
         const auto vertex_buffer = vulkan_create_buffer({{
-            .size                 = vertex_buffer_size,
-            .usage                = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            .sharing_mode         = VK_SHARING_MODE_EXCLUSIVE,
-            .queue_family_indices = {}
+            .size         = vertex_buffer_size,
+            .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
         }}, device);
 
         // Find memory requirements for vertex buffer
@@ -413,66 +434,155 @@ int main() {
         // Bind memory to vertex buffer
         vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
 
-        // Create staging buffer
-        const auto staging_buffer = vulkan_create_buffer({{
-            .size                 = vertex_buffer_size,
-            .usage                = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .sharing_mode         = VK_SHARING_MODE_EXCLUSIVE,
-            .queue_family_indices = {}
+        {
+            // Create staging buffer
+            const auto staging_buffer = vulkan_create_buffer({{
+                .size         = vertex_buffer_size,
+                .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
+            }}, device);
+
+            // Find memory requirements for staging buffer
+            vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
+
+            // Allocate memory for staging buffer
+            const auto staging_buffer_memory = vulkan_allocate_memory({{
+                .allocation_size   = memory_requirements.size,
+                .memory_type_index = find_memory_type(
+                    physical_device,
+                    memory_requirements.memoryTypeBits,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                )
+            }}, device);
+
+            // Bind memory to staging buffer
+            vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
+
+            // Copy vertex data to staging buffer
+            void* data;
+            vkMapMemory(device, staging_buffer_memory, 0, vertex_buffer_size, 0, &data);
+            memcpy(data, vertices.data(), static_cast<size_t>(vertex_buffer_size));
+            vkUnmapMemory(device, staging_buffer_memory);
+
+            // Copy staging buffer to vertex buffer
+            const auto command_buffer = vulkan_allocate_command_buffers({{
+                .command_pool         = command_pool,
+                .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .command_buffer_count = 1
+            }}, device)[0];
+
+            vulkan_begin_command_buffer({{
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+            }}, command_buffer);
+
+            vulkan_cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
+                {
+                    .size = vertex_buffer_size
+                }
+            });
+
+            vkEndCommandBuffer(command_buffer);
+
+            vulkan_queue_submit({
+                {{
+                    .command_buffers = {
+                        command_buffer
+                    },
+                }}
+            }, graphics_queue);
+
+            vkQueueWaitIdle(graphics_queue);
+
+            vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+        }
+
+        // Calculate index buffer size
+        const auto index_buffer_size = sizeof(indices[0]) * indices.size();
+
+        // Create index buffer
+        const auto index_buffer = vulkan_create_buffer({{
+            .size         = index_buffer_size,
+            .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
         }}, device);
 
-        // Find memory requirements for staging buffer
-        vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
+        // Find memory requirements for index buffer
+        vkGetBufferMemoryRequirements(device, index_buffer, &memory_requirements);
 
-        // Allocate memory for staging buffer
-        const auto staging_buffer_memory = vulkan_allocate_memory({{
+        // Allocate memory for index buffer
+        const auto index_buffer_memory = vulkan_allocate_memory({{
             .allocation_size   = memory_requirements.size,
             .memory_type_index = find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
         }}, device);
 
-        // Bind memory to staging buffer
-        vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
+        // Bind memory to index buffer
+        vkBindBufferMemory(device, index_buffer, index_buffer_memory, 0);
 
-        // Copy vertex data to staging buffer
-        void* data;
-        vkMapMemory(device, staging_buffer_memory, 0, vertex_buffer_size, 0, &data);
-        memcpy(data, vertices.data(), static_cast<size_t>(vertex_buffer_size));
-        vkUnmapMemory(device, staging_buffer_memory);
+        {
+            // Create staging buffer
+            const auto staging_buffer = vulkan_create_buffer({{
+                .size         = index_buffer_size,
+                .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
+            }}, device);
 
-        // Copy staging buffer to vertex buffer
-        const auto command_buffer = vulkan_allocate_command_buffers({{
-            .command_pool         = command_pool,
-            .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .command_buffer_count = 1
-        }}, device)[0];
+            // Find memory requirements for staging buffer
+            vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
 
-        vulkan_begin_command_buffer({{
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-        }}, command_buffer);
+            // Allocate memory for staging buffer
+            const auto staging_buffer_memory = vulkan_allocate_memory({{
+                .allocation_size   = memory_requirements.size,
+                .memory_type_index = find_memory_type(
+                    physical_device,
+                    memory_requirements.memoryTypeBits,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                )
+            }}, device);
 
-        vulkan_cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
-            {
-                .size = vertex_buffer_size
-            }
-        });
+            // Bind memory to staging buffer
+            vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
 
-        vkEndCommandBuffer(command_buffer);
+            // Copy vertex data to staging buffer
+            void* data;
+            vkMapMemory(device, staging_buffer_memory, 0, index_buffer_size, 0, &data);
+            memcpy(data, indices.data(), static_cast<size_t>(index_buffer_size));
+            vkUnmapMemory(device, staging_buffer_memory);
 
-        vulkan_queue_submit({
-            {{
-                .command_buffers = {
-                    command_buffer
-                },
-            }}
-        }, graphics_queue);
+            // Copy staging buffer to index buffer
+            const auto command_buffer = vulkan_allocate_command_buffers({{
+                .command_pool         = command_pool,
+                .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .command_buffer_count = 1
+            }}, device)[0];
 
-        vkQueueWaitIdle(graphics_queue);
+            vulkan_begin_command_buffer({{
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+            }}, command_buffer);
 
-        vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+            vulkan_cmd_copy_buffer(command_buffer, staging_buffer, index_buffer, {
+                {
+                    .size = index_buffer_size
+                }
+            });
+
+            vkEndCommandBuffer(command_buffer);
+
+            vulkan_queue_submit({
+                {{
+                    .command_buffers = {
+                        command_buffer
+                    },
+                }}
+            }, graphics_queue);
+
+            vkQueueWaitIdle(graphics_queue);
+
+            vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+        }
 
         // Allocate command buffers
         const auto command_buffers = vulkan_allocate_command_buffers({{
@@ -504,11 +614,14 @@ int main() {
             // Bind pipeline
             vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-            // Bind vertex buffer
+            // Bind vertex buffers
             vulkan_cmd_bind_vertex_buffers(command_buffers[i], 0, { vertex_buffer }, { 0 });
 
+            // Bind index buffer
+            vulkan_cmd_bind_index_buffer(command_buffers[i], index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
             // Draw
-            vkCmdDraw(command_buffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+            vkCmdDrawIndexed(command_buffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
             // End render pass
             vkCmdEndRenderPass(command_buffers[i]);

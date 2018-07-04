@@ -8,38 +8,6 @@
 #include <memory>
 #include <vector>
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 color;
-    
-    static std::vector<VkVertexInputBindingDescription> get_binding_descriptions() {
-        return {
-            {
-                .binding   = 0,
-                .stride    = sizeof(Vertex),
-                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-            }
-        };
-    }
-    
-    static std::vector<VkVertexInputAttributeDescription> get_attribute_descriptions() {
-        return {
-            {
-                .location = 0,
-                .binding  = 0,
-                .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset   = offsetof(Vertex, position)
-            },
-            {
-                .location = 1,
-                .binding  = 0,
-                .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset   = offsetof(Vertex, color)
-            }
-        };
-    }
-};
-
 template<typename To, typename From>
 inline std::vector<To> cast_vector(const std::vector<From>& from) {
     return std::vector<To>{from.begin(), from.end()};
@@ -72,7 +40,6 @@ struct VulkanApplicationInfoData {
     inline operator const VkApplicationInfo() {
         return {
             .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-            .pNext              = nullptr,
             .pApplicationName   = application_name,
             .applicationVersion = application_version,
             .pEngineName        = engine_name,
@@ -92,8 +59,6 @@ struct VulkanInstanceCreateInfoData {
     inline operator const VkInstanceCreateInfo() {
         return {
             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pNext                   = nullptr,
-            .flags                   = 0,
             .pApplicationInfo        = application_info,
             .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
             .ppEnabledLayerNames     = enabled_layers.data(),
@@ -113,7 +78,6 @@ struct VulkanDebugReportCallbackCreateInfoEXTData {
     inline operator const VkDebugReportCallbackCreateInfoEXT() {
         return {
             .sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-            .pNext       = nullptr,
             .flags       = flags,
             .pfnCallback = callback,
             .pUserData   = user_data
@@ -130,8 +94,6 @@ struct VulkanDeviceQueueCreateInfoData {
     inline operator const VkDeviceQueueCreateInfo() {
         return {
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pNext            = nullptr,
-            .flags            = 0,
             .queueFamilyIndex = queue_family_index,
             .queueCount       = static_cast<uint32_t>(queue_priorities.size()),
             .pQueuePriorities = queue_priorities.data()
@@ -150,8 +112,6 @@ struct VulkanDeviceCreateInfoData {
     inline operator const VkDeviceCreateInfo() {
         return {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext                   = nullptr,
-            .flags                   = 0,
             .queueCreateInfoCount    = static_cast<uint32_t>(queues.size()),
             .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
             .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
@@ -184,8 +144,6 @@ struct VulkanSwapchainCreateInfoKHRData {
     inline operator const VkSwapchainCreateInfoKHR() {
         return {
             .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext                 = nullptr,
-            .flags                 = 0,
             .surface               = surface,
             .minImageCount         = min_image_count,
             .imageFormat           = image_format,
@@ -217,8 +175,6 @@ struct VulkanImageViewCreateInfoData {
     inline operator const VkImageViewCreateInfo() {
         return {
             .sType            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext            = nullptr,
-            .flags            = 0,
             .image            = image,
             .viewType         = view_type,
             .format           = format,
@@ -317,8 +273,6 @@ struct VulkanRenderPassCreateInfoData {
     inline operator const VkRenderPassCreateInfo() {
         return {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .pNext           = nullptr,
-            .flags           = 0,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments    = cast_vector<const VkAttachmentDescription*>(attachments)[0],
             .subpassCount    = static_cast<uint32_t>(subpasses.size()),
@@ -341,8 +295,6 @@ struct VulkanFramebufferCreateInfoData {
     inline operator const VkFramebufferCreateInfo() {
         return {
             .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .pNext           = nullptr,
-            .flags           = 0,
             .renderPass      = render_pass,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments    = attachments.data(),
@@ -362,7 +314,6 @@ struct VulkanCommandPoolCreateInfoData {
     inline operator const VkCommandPoolCreateInfo() {
         return {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext            = nullptr,
             .flags            = flags,
             .queueFamilyIndex = queue_family_index
         };
@@ -379,7 +330,6 @@ struct VulkanCommandBufferAllocateInfoData {
     inline operator const VkCommandBufferAllocateInfo() {
         return {
             .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext              = nullptr,
             .commandPool        = command_pool,
             .level              = level,
             .commandBufferCount = command_buffer_count
@@ -398,7 +348,6 @@ struct VulkanRenderPassBeginInfoData {
     inline operator const VkRenderPassBeginInfo() {
         return {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .pNext           = nullptr,
             .renderPass      = render_pass,
             .framebuffer     = framebuffer,
             .renderArea      = render_area,
@@ -421,7 +370,6 @@ struct VulkanCommandBufferInheritanceInfoData {
     inline operator const VkCommandBufferInheritanceInfo() {
         return {
             .sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-            .pNext                = nullptr,
             .renderPass           = render_pass,
             .subpass              = subpass,
             .framebuffer          = framebuffer,
@@ -441,7 +389,6 @@ struct VulkanCommandBufferBeginInfoData {
     inline operator const VkCommandBufferBeginInfo() {
         return {
             .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext            = nullptr,
             .flags            = flags,
             .pInheritanceInfo = inheritance_info
         };
@@ -459,7 +406,6 @@ struct VulkanSubmitInfoData {
     inline operator const VkSubmitInfo() {
         return {
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext                = nullptr,
             .waitSemaphoreCount   = static_cast<uint32_t>(wait_semaphores.size()),
             .pWaitSemaphores      = wait_semaphores.data(),
             .pWaitDstStageMask    = &wait_dst_stage_mask,
@@ -482,13 +428,11 @@ struct VulkanPresentInfoKHRData {
         assert(image_indices.size() == swapchains.size());
         return {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext              = nullptr,
             .waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size()),
             .pWaitSemaphores    = wait_semaphores.data(),
             .swapchainCount     = static_cast<uint32_t>(swapchains.size()),
             .pSwapchains        = swapchains.data(),
             .pImageIndices      = image_indices.data(),
-            .pResults           = nullptr
         };
     }
 };
@@ -502,8 +446,6 @@ struct VulkanPipelineLayoutCreateInfoData {
     inline operator const VkPipelineLayoutCreateInfo() {
         return {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .pNext                  = nullptr,
-            .flags                  = 0,
             .setLayoutCount         = static_cast<uint32_t>(set_layouts.size()),
             .pSetLayouts            = set_layouts.data(),
             .pushConstantRangeCount = static_cast<uint32_t>(push_constant_ranges.size()),
@@ -539,8 +481,6 @@ struct VulkanPipelineShaderStageCreateInfoData {
     inline operator const VkPipelineShaderStageCreateInfo() {
         return {
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .pNext               = nullptr,
-            .flags               = 0,
             .stage               = stage,
             .module              = module,
             .pName               = name,
@@ -558,8 +498,6 @@ struct VulkanPipelineVertexInputStateCreateInfoData {
     inline operator const VkPipelineVertexInputStateCreateInfo() {
         return {
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            .pNext                           = nullptr,
-            .flags                           = 0,
             .vertexBindingDescriptionCount   = static_cast<uint32_t>(vertex_binding_descriptions.size()),
             .pVertexBindingDescriptions      = vertex_binding_descriptions.data(),
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex_attribute_descriptions.size()),
@@ -577,8 +515,6 @@ struct VulkanPipelineInputAssemblyStateCreateInfoData {
     inline operator const VkPipelineInputAssemblyStateCreateInfo() {
         return {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            .pNext                  = nullptr,
-            .flags                  = 0,
             .topology               = topology,
             .primitiveRestartEnable = primitive_restart_enable
         };
@@ -593,8 +529,6 @@ struct VulkanPipelineTessellationStateCreateInfoData {
     inline operator const VkPipelineTessellationStateCreateInfo() {
         return {
             .sType              = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
-            .pNext              = nullptr,
-            .flags              = 0,
             .patchControlPoints = patch_control_points
         };
     }
@@ -609,8 +543,6 @@ struct VulkanPipelineViewportStateCreateInfoData {
     inline operator const VkPipelineViewportStateCreateInfo() {
         return {
             .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            .pNext         = nullptr,
-            .flags         = 0,
             .viewportCount = static_cast<uint32_t>(viewports.size()),
             .pViewports    = viewports.data(),
             .scissorCount  = static_cast<uint32_t>(scissors.size()),
@@ -636,8 +568,6 @@ struct VulkanPipelineRasterizationStateCreateInfoData {
     inline operator const VkPipelineRasterizationStateCreateInfo() {
         return {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-            .pNext                   = nullptr,
-            .flags                   = 0,
             .depthClampEnable        = depth_clamp_enable,
             .rasterizerDiscardEnable = rasterizer_discard_enable,
             .polygonMode             = polygon_mode,
@@ -658,15 +588,13 @@ struct VulkanPipelineMultisampleStateCreateInfoData {
     VkSampleCountFlagBits rasterization_samples;
     VkBool32              sample_shading_enable;
     float                 min_sample_shading;
-    VkSampleMask          sample_mask;
+    VkSampleMask          sample_mask = -1u;
     VkBool32              alpha_to_coverage_enable;
     VkBool32              alpha_to_one_enable;
 
     inline operator const VkPipelineMultisampleStateCreateInfo() {
         return {
             .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
             .rasterizationSamples  = rasterization_samples,
             .sampleShadingEnable   = sample_shading_enable,
             .minSampleShading      = min_sample_shading,
@@ -693,8 +621,6 @@ struct VulkanPipelineDepthStencilStateCreateInfoData {
     inline operator const VkPipelineDepthStencilStateCreateInfo() {
         return {
             .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
             .depthTestEnable       = depth_test_enable,
             .depthWriteEnable      = depth_write_enable,
             .depthCompareOp        = depth_compare_op,
@@ -719,8 +645,6 @@ struct VulkanPipelineColorBlendStateCreateInfoData {
     inline operator const VkPipelineColorBlendStateCreateInfo() {
         VkPipelineColorBlendStateCreateInfo create_info = {
             .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            .pNext           = nullptr,
-            .flags           = 0,
             .logicOpEnable   = logic_op_enable,
             .logicOp         = logic_op,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
@@ -739,8 +663,6 @@ struct VulkanPipelineDynamicStateCreateInfoData {
     inline operator const VkPipelineDynamicStateCreateInfo() {
         return {
             .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            .pNext             = nullptr,
-            .flags             = 0,
             .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
             .pDynamicStates    = dynamic_states.data(),
         };
@@ -769,8 +691,6 @@ struct VulkanGraphicsPipelineCreateInfoData {
     inline operator const VkGraphicsPipelineCreateInfo() {
         return {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            .pNext               = nullptr,
-            .flags               = 0,
             .stageCount          = static_cast<uint32_t>(stages.size()),
             .pStages             = cast_vector<const VkPipelineShaderStageCreateInfo*>(stages)[0],
             .pVertexInputState   = vertex_input_state,
@@ -802,8 +722,6 @@ struct VulkanBufferCreateInfoData {
     inline operator const VkBufferCreateInfo() {
         return {
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = 0,
             .size                  = size,
             .usage                 = usage,
             .sharingMode           = sharing_mode,
@@ -822,7 +740,6 @@ struct VulkanMemoryAllocateInfoData {
     inline operator const VkMemoryAllocateInfo() {
         return {
             .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext           = nullptr,
             .allocationSize  = allocation_size,
             .memoryTypeIndex = memory_type_index
         };
@@ -1140,6 +1057,20 @@ inline void vulkan_cmd_bind_vertex_buffers(
         buffers.size(),
         buffers.data(),
         offsets.data()
+    );
+}
+
+inline void vulkan_cmd_bind_index_buffer(
+    VkCommandBuffer command_buffer,
+    VkBuffer        buffer,
+    VkDeviceSize    offset,
+    VkIndexType     index_type) {
+
+    vkCmdBindIndexBuffer(
+        command_buffer,
+        buffer,
+        offset,
+        index_type
     );
 }
 
