@@ -451,15 +451,12 @@ int main() {
         }}, device)[0];
 
         vulkan_begin_command_buffer({{
-            .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-            .inheritance_info = {{}}
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         }}, command_buffer);
 
         vulkan_cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
             {
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size      = vertex_buffer_size
+                .size = vertex_buffer_size
             }
         });
 
@@ -471,7 +468,7 @@ int main() {
                     command_buffer
                 },
             }}
-        }, graphics_queue, VK_NULL_HANDLE);
+        }, graphics_queue);
 
         vkQueueWaitIdle(graphics_queue);
 
@@ -488,8 +485,7 @@ int main() {
         for (size_t i = 0; i < command_buffers.size(); ++i) {
             // Begin command buffer
             vulkan_begin_command_buffer({{
-                .flags            = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-                .inheritance_info = {{}}
+                .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
             }}, command_buffers[i]);
 
             // Begin render pass

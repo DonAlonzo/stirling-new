@@ -1218,7 +1218,7 @@ inline uint32_t vulkan_acquire_next_image(
     return image_index;
 }
 
-inline void vulkan_queue_submit(std::vector<VulkanSubmitInfo>&& submit_infos, VkQueue queue, VkFence fence) {
+inline void vulkan_queue_submit(std::vector<VulkanSubmitInfo>&& submit_infos, VkQueue queue, VkFence fence = VK_NULL_HANDLE) {
     vulkan_assert(
         vkQueueSubmit(
             queue,
