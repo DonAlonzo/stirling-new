@@ -9,7 +9,7 @@
 #include <vector>
 
 struct Vertex {
-    glm::vec2 pos;
+    glm::vec3 position;
     glm::vec3 color;
     
     static std::vector<VkVertexInputBindingDescription> get_binding_descriptions() {
@@ -27,8 +27,8 @@ struct Vertex {
             {
                 .location = 0,
                 .binding  = 0,
-                .format   = VK_FORMAT_R32G32_SFLOAT,
-                .offset   = offsetof(Vertex, pos)
+                .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset   = offsetof(Vertex, position)
             },
             {
                 .location = 1,
@@ -95,9 +95,9 @@ struct VulkanInstanceCreateInfoData {
             .pNext                   = nullptr,
             .flags                   = 0,
             .pApplicationInfo        = application_info,
-            .enabledLayerCount       = enabled_layers.size(),
+            .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
             .ppEnabledLayerNames     = enabled_layers.data(),
-            .enabledExtensionCount   = enabled_extensions.size(),
+            .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data()
         };
     }
@@ -133,7 +133,7 @@ struct VulkanDeviceQueueCreateInfoData {
             .pNext            = nullptr,
             .flags            = 0,
             .queueFamilyIndex = queue_family_index,
-            .queueCount       = queue_priorities.size(),
+            .queueCount       = static_cast<uint32_t>(queue_priorities.size()),
             .pQueuePriorities = queue_priorities.data()
         };
     }
@@ -152,11 +152,11 @@ struct VulkanDeviceCreateInfoData {
             .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext                   = nullptr,
             .flags                   = 0,
-            .queueCreateInfoCount    = queues.size(),
+            .queueCreateInfoCount    = static_cast<uint32_t>(queues.size()),
             .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues)[0],
-            .enabledLayerCount       = enabled_layers.size(),
+            .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
             .ppEnabledLayerNames     = enabled_layers.data(),
-            .enabledExtensionCount   = enabled_extensions.size(),
+            .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
             .pEnabledFeatures        = &enabled_features
         };
@@ -194,7 +194,7 @@ struct VulkanSwapchainCreateInfoKHRData {
             .imageArrayLayers      = image_array_layers,
             .imageUsage            = image_usage,
             .imageSharingMode      = image_sharing_mode,
-            .queueFamilyIndexCount = queue_family_indices.size(),
+            .queueFamilyIndexCount = static_cast<uint32_t>(queue_family_indices.size()),
             .pQueueFamilyIndices   = queue_family_indices.data(),
             .preTransform          = pre_transform,
             .compositeAlpha        = composite_alpha,
@@ -264,20 +264,20 @@ struct VulkanSubpassDescriptionData {
     std::vector<VkAttachmentReference> input_attachments;
     std::vector<VkAttachmentReference> color_attachments;
     std::vector<VkAttachmentReference> resolve_attachments;
-    VkAttachmentReference              depth_stencil_attachment;
+    VkAttachmentReference              depth_stencil_attachment = { VK_ATTACHMENT_UNUSED };
     std::vector<uint32_t>              preserve_attachments;
 
     inline operator const VkSubpassDescription() {
         return {
             .flags                   = flags,
             .pipelineBindPoint       = pipeline_bind_point,
-            .inputAttachmentCount    = input_attachments.size(),
+            .inputAttachmentCount    = static_cast<uint32_t>(input_attachments.size()),
             .pInputAttachments       = input_attachments.data(),
-            .colorAttachmentCount    = color_attachments.size(),
+            .colorAttachmentCount    = static_cast<uint32_t>(color_attachments.size()),
             .pColorAttachments       = color_attachments.data(),
             .pResolveAttachments     = resolve_attachments.data(),
             .pDepthStencilAttachment = &depth_stencil_attachment,
-            .preserveAttachmentCount = preserve_attachments.size(),
+            .preserveAttachmentCount = static_cast<uint32_t>(preserve_attachments.size()),
             .pPreserveAttachments    = preserve_attachments.data()
         };
     }
@@ -319,11 +319,11 @@ struct VulkanRenderPassCreateInfoData {
             .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             .pNext           = nullptr,
             .flags           = 0,
-            .attachmentCount = attachments.size(),
+            .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments    = cast_vector<const VkAttachmentDescription*>(attachments)[0],
-            .subpassCount    = subpasses.size(),
+            .subpassCount    = static_cast<uint32_t>(subpasses.size()),
             .pSubpasses      = cast_vector<const VkSubpassDescription*>(subpasses)[0],
-            .dependencyCount = dependencies.size(),
+            .dependencyCount = static_cast<uint32_t>(dependencies.size()),
             .pDependencies   = cast_vector<const VkSubpassDependency*>(dependencies)[0]
         };
     }
@@ -344,7 +344,7 @@ struct VulkanFramebufferCreateInfoData {
             .pNext           = nullptr,
             .flags           = 0,
             .renderPass      = render_pass,
-            .attachmentCount = attachments.size(),
+            .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments    = attachments.data(),
             .width           = width,
             .height          = height,
@@ -402,7 +402,7 @@ struct VulkanRenderPassBeginInfoData {
             .renderPass      = render_pass,
             .framebuffer     = framebuffer,
             .renderArea      = render_area,
-            .clearValueCount = clear_values.size(),
+            .clearValueCount = static_cast<uint32_t>(clear_values.size()),
             .pClearValues    = clear_values.data()
         };
     }
@@ -460,12 +460,12 @@ struct VulkanSubmitInfoData {
         return {
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                = nullptr,
-            .waitSemaphoreCount   = wait_semaphores.size(),
+            .waitSemaphoreCount   = static_cast<uint32_t>(wait_semaphores.size()),
             .pWaitSemaphores      = wait_semaphores.data(),
             .pWaitDstStageMask    = &wait_dst_stage_mask,
-            .commandBufferCount   = command_buffers.size(),
+            .commandBufferCount   = static_cast<uint32_t>(command_buffers.size()),
             .pCommandBuffers      = command_buffers.data(),
-            .signalSemaphoreCount = signal_semaphores.size(),
+            .signalSemaphoreCount = static_cast<uint32_t>(signal_semaphores.size()),
             .pSignalSemaphores    = signal_semaphores.data(),
         };
     }
@@ -483,9 +483,9 @@ struct VulkanPresentInfoKHRData {
         return {
             .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext              = nullptr,
-            .waitSemaphoreCount = wait_semaphores.size(),
+            .waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size()),
             .pWaitSemaphores    = wait_semaphores.data(),
-            .swapchainCount     = swapchains.size(),
+            .swapchainCount     = static_cast<uint32_t>(swapchains.size()),
             .pSwapchains        = swapchains.data(),
             .pImageIndices      = image_indices.data(),
             .pResults           = nullptr
@@ -504,9 +504,9 @@ struct VulkanPipelineLayoutCreateInfoData {
             .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext                  = nullptr,
             .flags                  = 0,
-            .setLayoutCount         = set_layouts.size(),
+            .setLayoutCount         = static_cast<uint32_t>(set_layouts.size()),
             .pSetLayouts            = set_layouts.data(),
-            .pushConstantRangeCount = push_constant_ranges.size(),
+            .pushConstantRangeCount = static_cast<uint32_t>(push_constant_ranges.size()),
             .pPushConstantRanges    = push_constant_ranges.data()
         };
     }
@@ -520,9 +520,9 @@ struct VulkanSpecializationInfoData {
 
     inline operator const VkSpecializationInfo() {
         return {
-            .mapEntryCount = map_entries.size(),
+            .mapEntryCount = static_cast<uint32_t>(map_entries.size()),
             .pMapEntries   = map_entries.data(),
-            .dataSize      = data.size(),
+            .dataSize      = static_cast<uint32_t>(data.size()),
             .pData         = data.data()
         };
     }
@@ -560,9 +560,9 @@ struct VulkanPipelineVertexInputStateCreateInfoData {
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .pNext                           = nullptr,
             .flags                           = 0,
-            .vertexBindingDescriptionCount   = vertex_binding_descriptions.size(),
+            .vertexBindingDescriptionCount   = static_cast<uint32_t>(vertex_binding_descriptions.size()),
             .pVertexBindingDescriptions      = vertex_binding_descriptions.data(),
-            .vertexAttributeDescriptionCount = vertex_attribute_descriptions.size(),
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex_attribute_descriptions.size()),
             .pVertexAttributeDescriptions    = vertex_attribute_descriptions.data()
         };
     }
@@ -611,9 +611,9 @@ struct VulkanPipelineViewportStateCreateInfoData {
             .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             .pNext         = nullptr,
             .flags         = 0,
-            .viewportCount = viewports.size(),
+            .viewportCount = static_cast<uint32_t>(viewports.size()),
             .pViewports    = viewports.data(),
-            .scissorCount  = scissors.size(),
+            .scissorCount  = static_cast<uint32_t>(scissors.size()),
             .pScissors     = scissors.data()
         };
     }
@@ -723,7 +723,7 @@ struct VulkanPipelineColorBlendStateCreateInfoData {
             .flags           = 0,
             .logicOpEnable   = logic_op_enable,
             .logicOp         = logic_op,
-            .attachmentCount = attachments.size(),
+            .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments    = attachments.data(),
         };
         std::copy(blend_constants.begin(), blend_constants.end(), create_info.blendConstants);
@@ -741,7 +741,7 @@ struct VulkanPipelineDynamicStateCreateInfoData {
             .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .pNext             = nullptr,
             .flags             = 0,
-            .dynamicStateCount = dynamic_states.size(),
+            .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
             .pDynamicStates    = dynamic_states.data(),
         };
     }
@@ -771,7 +771,7 @@ struct VulkanGraphicsPipelineCreateInfoData {
             .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext               = nullptr,
             .flags               = 0,
-            .stageCount          = stages.size(),
+            .stageCount          = static_cast<uint32_t>(stages.size()),
             .pStages             = cast_vector<const VkPipelineShaderStageCreateInfo*>(stages)[0],
             .pVertexInputState   = vertex_input_state,
             .pInputAssemblyState = input_assembly_state,
@@ -807,7 +807,7 @@ struct VulkanBufferCreateInfoData {
             .size                  = size,
             .usage                 = usage,
             .sharingMode           = sharing_mode,
-            .queueFamilyIndexCount = queue_family_indices.size(),
+            .queueFamilyIndexCount = static_cast<uint32_t>(queue_family_indices.size()),
             .pQueueFamilyIndices   = queue_family_indices.data()
         };
     }
@@ -1061,7 +1061,7 @@ inline Deleter<VkFence> vulkan_create_fence(VkDevice device, bool signaled = fal
     return vulkan_create_fence({
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .pNext = nullptr,
-        .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0
+        .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0u
     }, device);
 }
 

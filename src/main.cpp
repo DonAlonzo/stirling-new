@@ -13,14 +13,14 @@
 #include <vector>
 
 VkBool32 debug_callback(
-    const auto flags, 
-    const auto object_type, 
-    const auto object, 
-    const auto location, 
-    const auto code, 
-    const auto layer_prefix, 
-    const auto message, 
-    const auto user_data) {
+    VkDebugReportFlagsEXT      flags,
+    VkDebugReportObjectTypeEXT object_type,
+    uint64_t                   object,
+    size_t                     location,
+    int32_t                    message_code,
+    const char*                layer_prefix,
+    const char*                message,
+    void*                      user_data) {
 
     std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
     return VK_FALSE;
@@ -57,7 +57,6 @@ int main() {
         const auto debug_callback_handle = vulkan_create_debug_report_callback({{
             .flags     = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
             .callback  = debug_callback,
-            .user_data = nullptr
         }}, instance);
 
         // Create window surface
@@ -93,16 +92,11 @@ int main() {
                 }
                 return create_infos;
             }(),
-            .enabled_layers = {},
             .enabled_extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME    
             },
             .enabled_features = {
-                .robustBufferAccess  = VK_FALSE,
-                .fullDrawIndexUint32 = VK_FALSE,
-                .imageCubeArray      = VK_FALSE,
-                .independentBlend    = VK_FALSE,
-                .geometryShader      = VK_TRUE
+                .geometryShader  = VK_TRUE
             }
         }}, physical_device);
 
@@ -232,11 +226,7 @@ int main() {
             },
             .subpasses = {
                 {{
-                    .flags = 0,
-
                     .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-                    .input_attachments = {},
 
                     // Color attachments
                     .color_attachments = {
@@ -245,12 +235,6 @@ int main() {
                             .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
                         }
                     },
-
-                    .resolve_attachments = {},
-
-                    .depth_stencil_attachment = { VK_ATTACHMENT_UNUSED },
-
-                    .preserve_attachments = {}
                 }}
             },
             .dependencies = {
@@ -266,9 +250,6 @@ int main() {
                     // Access masks
                     .src_access_mask = 0,
                     .dst_access_mask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-
-                    // Flags
-                    .dependency_flags = 0
                 }}
             }
         }}, device);
@@ -281,25 +262,18 @@ int main() {
                     .stage               = VK_SHADER_STAGE_VERTEX_BIT,
                     .module              = vulkan_create_shader_module("vert.spv", device),
                     .name                = "main",
-                    .specialization_info = {{
-                    }}
                 }},
-                //GEOMETRY SHADER
+                // Geometry shader stage
                 {{
                     .stage               = VK_SHADER_STAGE_GEOMETRY_BIT,
                     .module              = vulkan_create_shader_module("geom.spv", device),
                     .name                = "main",
-                    .specialization_info = {{
-                    }}
-
                 }},
                 // Fragment shader stage
                 {{
                     .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
                     .module              = vulkan_create_shader_module("frag.spv", device),
                     .name                = "main",
-                    .specialization_info = {{
-                    }}
                 }}
             },
 
@@ -311,9 +285,6 @@ int main() {
             .input_assembly_state = {{
                 .topology                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
                 .primitive_restart_enable = VK_FALSE
-            }},
-
-            .tessellation_state = {{
             }},
 
             .viewport_state = {{
@@ -353,12 +324,9 @@ int main() {
                 .rasterization_samples    = VK_SAMPLE_COUNT_1_BIT,
                 .sample_shading_enable    = VK_FALSE,
                 .min_sample_shading       = 1.0f,
-                .sample_mask              = -1,
+                .sample_mask              = -1u,
                 .alpha_to_coverage_enable = VK_FALSE,
                 .alpha_to_one_enable      = VK_FALSE
-            }},
-
-            .depth_stencil_state = {{
             }},
 
             .color_blend_state = {{
@@ -384,22 +352,10 @@ int main() {
                 .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
             }},
 
-            .dynamic_state = {{
-            }},
-
             .layout = vulkan_create_pipeline_layout({{
-                .set_layouts = {
-                },
-                .push_constant_ranges = {
-                }
             }}, device),
 
             .render_pass = render_pass,
-
-            .subpass = 0,
-
-            .base_pipeline_handle = VK_NULL_HANDLE,
-            .base_pipeline_index  = -1
         }}, VK_NULL_HANDLE, device);
 
         // Create framebuffers
@@ -424,9 +380,9 @@ int main() {
 
         // Create vertices
         const std::vector<Vertex> vertices = {
-            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+            {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}
         };
 
         // Calculate vertex buffer size
@@ -511,12 +467,9 @@ int main() {
 
         vulkan_queue_submit({
             {{
-                .wait_semaphores     = {},
-                .wait_dst_stage_mask = 0,
-                .command_buffers     = {
+                .command_buffers = {
                     command_buffer
                 },
-                .signal_semaphores   = {}
             }}
         }, graphics_queue, VK_NULL_HANDLE);
 
@@ -528,7 +481,7 @@ int main() {
         const auto command_buffers = vulkan_allocate_command_buffers({{
             .command_pool         = command_pool,
             .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .command_buffer_count = swapchain_framebuffers.size()
+            .command_buffer_count = static_cast<uint32_t>(swapchain_framebuffers.size())
         }}, device);
 
         // Record command buffers
