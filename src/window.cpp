@@ -4,11 +4,22 @@ Window::Window(uint32_t width, uint32_t height, const char* title) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-    window = glfwCreateWindow(width, height, title, nullptr/*glfwGetPrimaryMonitor()*/, nullptr);
+    const auto monitor = glfwGetPrimaryMonitor();
+    const auto mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+    window = glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr);
     if (!window) throw "Failed to create window.";
-    glfwSetWindowPos(window, 0, 0);
+
+    //glfwSetWindowPos(window, 0, 0);
+    glfwSetWindowPos(window, (mode->width - width) / 2, (mode->height - height) / 2);
+
     //glfwSetWindowUserPointer(window, this);
     //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }

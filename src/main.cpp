@@ -44,8 +44,8 @@ VkBool32 debug_callback(
 
 int main() {
     try {
-        const uint32_t width = 800;
-        const uint32_t height = 600;
+        const uint32_t width = 1024;
+        const uint32_t height = 768;
 
         // Create window
         const Window window{width, height, "Stirling Engine"};
