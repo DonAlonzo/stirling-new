@@ -97,7 +97,13 @@ int main() {
             .enabled_extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME    
             },
-            .enabled_features = {}
+            .enabled_features = {
+                .robustBufferAccess  = VK_FALSE,
+                .fullDrawIndexUint32 = VK_FALSE,
+                .imageCubeArray      = VK_FALSE,
+                .independentBlend    = VK_FALSE,
+                .geometryShader      = VK_TRUE
+            }
         }}, physical_device);
 
         // Retrieve queue handles
@@ -278,6 +284,15 @@ int main() {
                     .specialization_info = {{
                     }}
                 }},
+                //GEOMETRY SHADER
+                {{
+                    .stage               = VK_SHADER_STAGE_GEOMETRY_BIT,
+                    .module              = vulkan_create_shader_module("geom.spv", device),
+                    .name                = "main",
+                    .specialization_info = {{
+                    }}
+
+                }},
                 // Fragment shader stage
                 {{
                     .stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -392,11 +407,9 @@ int main() {
         for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
             swapchain_framebuffers[i] = vulkan_create_framebuffer({{
                 .render_pass = render_pass,
-
                 .attachments = {{
                     swapchain_image_views[i]
                 }},
-
                 .width  = surface_extent.width,
                 .height = surface_extent.height,
                 .layers = 1
@@ -483,14 +496,7 @@ int main() {
 
         vulkan_begin_command_buffer({{
             .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-            .inheritance_info = {{
-                .render_pass            = VK_NULL_HANDLE,
-                .subpass                = 0,
-                .framebuffer            = VK_NULL_HANDLE,
-                .occlusion_query_enable = false,
-                .query_flags            = 0,
-                .pipeline_statistics    = 0,
-            }}
+            .inheritance_info = {{}}
         }}, command_buffer);
 
         vulkan_cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
@@ -505,12 +511,12 @@ int main() {
 
         vulkan_queue_submit({
             {{
-                .wait_semaphores = {},
+                .wait_semaphores     = {},
                 .wait_dst_stage_mask = 0,
-                .command_buffers = {
+                .command_buffers     = {
                     command_buffer
                 },
-                .signal_semaphores = {}
+                .signal_semaphores   = {}
             }}
         }, graphics_queue, VK_NULL_HANDLE);
 
@@ -530,14 +536,7 @@ int main() {
             // Begin command buffer
             vulkan_begin_command_buffer({{
                 .flags            = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-                .inheritance_info = {{
-                    .render_pass            = VK_NULL_HANDLE,
-                    .subpass                = 0,
-                    .framebuffer            = VK_NULL_HANDLE,
-                    .occlusion_query_enable = false,
-                    .query_flags            = 0,
-                    .pipeline_statistics    = 0,
-                }}
+                .inheritance_info = {{}}
             }}, command_buffers[i]);
 
             // Begin render pass
@@ -593,13 +592,10 @@ int main() {
                     .wait_semaphores = {
                         image_available_semaphores[current_frame]
                     },
-
                     .wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-
                     .command_buffers = {
                         command_buffers[image_index]
                     },
-
                     .signal_semaphores = {
                         render_finished_semaphores[current_frame]
                     }
@@ -611,11 +607,9 @@ int main() {
                 .wait_semaphores = {
                     render_finished_semaphores[current_frame]
                 },
-
                 .swapchains = {
                     swapchain
                 },
-
                 .image_indices = {
                     image_index
                 }
