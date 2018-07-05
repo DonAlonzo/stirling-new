@@ -19,24 +19,38 @@ template<typename Handle>
 struct Deleter {
     Deleter() = default;
 
-    Deleter(void (*deleter)(Handle, const VkAllocationCallbacks*)) :
-        deleter ([=]() { deleter(this->handle, nullptr); }) {
+    Deleter(
+        void (*deleter)(Handle, const VkAllocationCallbacks*),
+        Handle handle = VK_NULL_HANDLE) :
+        
+        deleter ([=]() { deleter(this->handle, nullptr); }), 
+        handle  (handle) {
     }
 
     template<typename Parent>
-    Deleter(void (*deleter)(Parent, Handle, const VkAllocationCallbacks*), Parent parent) :
-        deleter ([=]() { deleter(parent, this->handle, nullptr); }) {
+    Deleter(
+        void (*deleter)(Parent, Handle, const VkAllocationCallbacks*),
+        Parent parent,
+        Handle handle = VK_NULL_HANDLE) :
+        
+        deleter ([=]() { deleter(parent, this->handle, nullptr); }),
+        handle  (handle) {
     }
 
     template<typename Parent>
-    Deleter(void (*deleter)(Parent, Handle, const VkAllocationCallbacks*), Deleter<Parent> parent) :
-        deleter ([=]() { deleter(parent, this->handle, nullptr); }) {
+    Deleter(
+        void          (*deleter)(Parent, Handle, const VkAllocationCallbacks*),
+        Deleter<Parent> parent,
+        Handle          handle = VK_NULL_HANDLE) :
+        
+        deleter ([=]() { deleter(parent, this->handle, nullptr); }),
+        handle  (handle) {
     }
 
     Deleter(const Deleter& rhs) :
-        handle (rhs.handle),
+        handle            (rhs.handle),
         reference_counter (rhs.reference_counter),
-        deleter (rhs.deleter) {
+        deleter           (rhs.deleter) {
 
         ++(*reference_counter);
     }

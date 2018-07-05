@@ -515,6 +515,7 @@ namespace stirling {
 
             vkQueueWaitIdle(graphics_queue);
 
+            //command_pool.free_command_buffers({command_buffer}));
             // TODO vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
         }
 
@@ -605,6 +606,8 @@ namespace stirling {
 
             vkQueueWaitIdle(graphics_queue);
 
+
+            //command_pool.free_command_buffers({command_buffer});
             // TODO vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
         }
 
