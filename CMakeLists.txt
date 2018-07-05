@@ -5,9 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(
-    "$<$<CXX_COMPILER_ID:GNU>:-O3>"
-    "$<$<CXX_COMPILER_ID:GNU>:-Wno-narrowing>"
-    "$<$<CXX_COMPILER_ID:GNU>:-Wno-c++11-narrowing>"
+    "$<$<CXX_COMPILER_ID:Clang>:-O3>"
+    "$<$<CXX_COMPILER_ID:Clang>:-Wno-narrowing>"
+    "$<$<CXX_COMPILER_ID:Clang>:-Wno-c++11-narrowing>"
 )
 
 # Dependencies

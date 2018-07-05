@@ -662,6 +662,7 @@ int main() {
             .set_layouts     = {swapchain_image_views.size(), descriptor_set_layout}
         }}, device);
 
+        // Update descriptor sets
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
             vulkan_update_descriptor_sets(device, {
                 {{

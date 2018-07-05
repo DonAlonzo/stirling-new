@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <vector>
 
 template<typename To, typename From>
@@ -27,7 +28,7 @@ struct VulkanWrapper {
     inline const To& data() const { return to; }
 
 private:
-    To to;
+    To to = From{};
 };
 
 struct VulkanApplicationInfoData {
@@ -346,7 +347,6 @@ struct VulkanDescriptorSetAllocateInfoData {
     inline operator const VkDescriptorSetAllocateInfo() {
         return {
             .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .pNext              = nullptr,
             .descriptorPool     = descriptor_pool,
             .descriptorSetCount = static_cast<uint32_t>(set_layouts.size()),
             .pSetLayouts        = set_layouts.data()
@@ -705,21 +705,21 @@ typedef VulkanWrapper<VulkanPipelineDynamicStateCreateInfoData, VkPipelineDynami
     VulkanPipelineDynamicStateCreateInfo;
 
 struct VulkanGraphicsPipelineCreateInfoData {
-    std::vector<VulkanPipelineShaderStageCreateInfo> stages;
-    VulkanPipelineVertexInputStateCreateInfo         vertex_input_state;
-    VulkanPipelineInputAssemblyStateCreateInfo       input_assembly_state;
-    VulkanPipelineTessellationStateCreateInfo        tessellation_state;
-    VulkanPipelineViewportStateCreateInfo            viewport_state;
-    VulkanPipelineRasterizationStateCreateInfo       rasterization_state;
-    VulkanPipelineMultisampleStateCreateInfo         multisample_state;
-    VulkanPipelineDepthStencilStateCreateInfo        depth_stencil_state;
-    VulkanPipelineColorBlendStateCreateInfo          color_blend_state;
-    VulkanPipelineDynamicStateCreateInfo             dynamic_state;
-    VkPipelineLayout                                 layout;
-    VkRenderPass                                     render_pass;
-    uint32_t                                         subpass;
-    VkPipeline                                       base_pipeline_handle;
-    int32_t                                          base_pipeline_index;
+    std::vector<VulkanPipelineShaderStageCreateInfo>    stages;
+    VulkanPipelineVertexInputStateCreateInfo            vertex_input_state;
+    VulkanPipelineInputAssemblyStateCreateInfo          input_assembly_state;
+    VulkanPipelineTessellationStateCreateInfo           tessellation_state;
+    VulkanPipelineViewportStateCreateInfo               viewport_state;
+    VulkanPipelineRasterizationStateCreateInfo          rasterization_state;
+    VulkanPipelineMultisampleStateCreateInfo            multisample_state;
+    VulkanPipelineDepthStencilStateCreateInfo           depth_stencil_state;
+    VulkanPipelineColorBlendStateCreateInfo             color_blend_state;
+    std::optional<VulkanPipelineDynamicStateCreateInfo> dynamic_state;
+    VkPipelineLayout                                    layout;
+    VkRenderPass                                        render_pass;
+    uint32_t                                            subpass;
+    VkPipeline                                          base_pipeline_handle;
+    int32_t                                             base_pipeline_index;
 
     inline operator const VkGraphicsPipelineCreateInfo() {
         return {
@@ -734,7 +734,7 @@ struct VulkanGraphicsPipelineCreateInfoData {
             .pMultisampleState   = multisample_state,
             .pDepthStencilState  = depth_stencil_state,
             .pColorBlendState    = color_blend_state,
-            .pDynamicState       = dynamic_state,
+            .pDynamicState       = dynamic_state ? *dynamic_state : nullptr,
             .layout              = layout,
             .renderPass          = render_pass,
             .subpass             = subpass,
@@ -1026,9 +1026,9 @@ inline std::vector<Deleter<VkPipeline>> vulkan_create_pipelines(
 }
 
 inline Deleter<VkPipeline> vulkan_create_pipeline(
-    const VulkanGraphicsPipelineCreateInfo& create_info,
-    VkPipelineCache                         pipeline_cache,
-    VkDevice                                device) {
+    VulkanGraphicsPipelineCreateInfo&& create_info,
+    VkPipelineCache                    pipeline_cache,
+    VkDevice                           device) {
 
     return vulkan_create<VkPipeline>(
         vkCreateGraphicsPipelines,
