@@ -47,24 +47,6 @@ namespace stirling { namespace vulkan {
     };
     typedef Wrapper<ApplicationInfoData, VkApplicationInfo> ApplicationInfo;
 
-    struct InstanceCreateInfoData {
-        ApplicationInfo    application_info;
-        std::vector<const char*> enabled_layers;
-        std::vector<const char*> enabled_extensions;
-
-        inline operator const VkInstanceCreateInfo() const {
-            return {
-                .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                .pApplicationInfo        = application_info,
-                .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
-                .ppEnabledLayerNames     = enabled_layers.data(),
-                .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
-                .ppEnabledExtensionNames = enabled_extensions.data()
-            };
-        }
-    };
-    typedef Wrapper<InstanceCreateInfoData, VkInstanceCreateInfo> InstanceCreateInfo;
-
     struct DebugReportCallbackCreateInfoEXTData {
         VkDebugReportFlagsEXT        flags;
         PFN_vkDebugReportCallbackEXT callback;
@@ -95,27 +77,6 @@ namespace stirling { namespace vulkan {
         }
     }; 
     typedef Wrapper<DeviceQueueCreateInfoData, VkDeviceQueueCreateInfo> DeviceQueueCreateInfo; 
-
-    struct DeviceCreateInfoData {
-        std::vector<DeviceQueueCreateInfo> queues;
-        std::vector<const char*>           enabled_layers;
-        std::vector<const char*>           enabled_extensions;
-        VkPhysicalDeviceFeatures           enabled_features;
-
-        inline operator const VkDeviceCreateInfo() const {
-            return {
-                .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                .queueCreateInfoCount    = static_cast<uint32_t>(queues.size()),
-                .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(queues),
-                .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
-                .ppEnabledLayerNames     = enabled_layers.data(),
-                .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
-                .ppEnabledExtensionNames = enabled_extensions.data(),
-                .pEnabledFeatures        = &enabled_features
-            };
-        }
-    };
-    typedef Wrapper<DeviceCreateInfoData, VkDeviceCreateInfo> DeviceCreateInfo;
 
     struct SwapchainCreateInfoKHRData {
         VkSurfaceKHR                  surface;
@@ -707,39 +668,6 @@ namespace stirling { namespace vulkan {
         }
     };
     typedef Wrapper<GraphicsPipelineCreateInfoData, VkGraphicsPipelineCreateInfo> GraphicsPipelineCreateInfo;
-
-    struct BufferCreateInfoData {
-        VkDeviceSize          size;
-        VkBufferUsageFlags    usage;
-        VkSharingMode         sharing_mode;
-        std::vector<uint32_t> queue_family_indices;
-
-        inline operator const VkBufferCreateInfo() const {
-            return {
-                .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                .size                  = size,
-                .usage                 = usage,
-                .sharingMode           = sharing_mode,
-                .queueFamilyIndexCount = static_cast<uint32_t>(queue_family_indices.size()),
-                .pQueueFamilyIndices   = queue_family_indices.data()
-            };
-        }
-    };
-    typedef Wrapper<BufferCreateInfoData, VkBufferCreateInfo> BufferCreateInfo;
-
-    struct MemoryAllocateInfoData {
-        VkDeviceSize allocation_size;
-        uint32_t     memory_type_index;
-
-        inline operator const VkMemoryAllocateInfo() const {
-            return {
-                .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                .allocationSize  = allocation_size,
-                .memoryTypeIndex = memory_type_index
-            };
-        }
-    };
-    typedef Wrapper<MemoryAllocateInfoData, VkMemoryAllocateInfo> MemoryAllocateInfo;
 
     struct DescriptorPoolCreateInfoData {
         VkDescriptorPoolCreateFlags       flags;

@@ -71,10 +71,10 @@ namespace stirling {
         const auto surface = instance.create_surface(window);
 
         // Pick physical device
-        const auto physical_device = [instance]() {
-            for (const auto& physical_device : vulkan::get_physical_devices(instance)) {
-                const auto properties = vulkan::get_physical_device_properties(physical_device);
-                const auto features = vulkan::get_physical_device_features(physical_device);
+        const auto physical_device = [physical_devices = instance.get_physical_devices()]() {
+            for (const auto& physical_device : physical_devices) {
+                const auto properties = physical_device.get_physical_device_properties();
+                const auto features = physical_device.get_physical_device_features();
 
                 return physical_device;
             }
@@ -82,7 +82,7 @@ namespace stirling {
         }();
 
         // Get queue families on physical device
-        const auto queue_families = vulkan::get_queue_families(physical_device, surface);
+        const auto queue_families = physical_device.get_queue_families(surface);
 
         // Create device
         const vulkan::Device device{{{

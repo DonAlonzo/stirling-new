@@ -36,17 +36,6 @@ namespace stirling { namespace vulkan {
         return handle;
     }
 
-    inline Deleter<VkInstance> create_instance(
-        const InstanceCreateInfo& create_info) {
-        
-        return create<VkInstance>(
-            vkCreateInstance,
-            vkDestroyInstance,
-            "Failed to create instance.",
-            create_info
-        );
-    }
-
     inline Deleter<VkDebugReportCallbackEXT> create_debug_report_callback(
         const DebugReportCallbackCreateInfoEXT& create_info,
         VkInstance                              instance) {
@@ -73,19 +62,6 @@ namespace stirling { namespace vulkan {
             instance,
             "Failed to create surface.",
             window
-        );
-    }
-
-    inline Deleter<VkDevice> create_device(
-        const DeviceCreateInfo& create_info,
-        VkPhysicalDevice        physical_device) {
-        
-        return create<VkDevice>(
-            vkCreateDevice,
-            vkDestroyDevice,
-            "Failed to create device.",
-            physical_device,
-            create_info
         );
     }
 
@@ -311,32 +287,6 @@ namespace stirling { namespace vulkan {
             device,
             "Failed to create command pool.",
             create_info
-        );
-    }
-
-    inline Deleter<VkBuffer> create_buffer(
-        const BufferCreateInfo& create_info,
-        VkDevice                device) {
-
-        return create<VkBuffer>(
-            vkCreateBuffer,
-            vkDestroyBuffer,
-            device,
-            "Failed to create buffer.",
-            create_info
-        );
-    }
-
-    inline Deleter<VkDeviceMemory> allocate_memory(
-        const MemoryAllocateInfo& allocate_info,
-        VkDevice                  device) {
-
-        return create<VkDeviceMemory>(
-            vkAllocateMemory,
-            vkFreeMemory,
-            device,
-            "Failed to allocate memory.",
-            allocate_info
         );
     }
 

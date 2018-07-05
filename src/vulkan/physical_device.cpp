@@ -7,4 +7,16 @@ namespace stirling { namespace vulkan {
         physical_device (physical_device) {
     }
 
+    VkPhysicalDeviceProperties PhysicalDevice::get_physical_device_properties() const {
+        return vulkan::get_physical_device_properties(physical_device);
+    }
+
+    VkPhysicalDeviceFeatures PhysicalDevice::get_physical_device_features() const {
+        return vulkan::get_physical_device_features(physical_device);
+    }
+
+    QueueFamilyIndices PhysicalDevice::get_queue_families(VkSurfaceKHR surface) const {
+        return vulkan::get_queue_families(physical_device, surface);
+    }
+
 }}

@@ -3,6 +3,19 @@
 
 namespace stirling { namespace vulkan {
 
+    inline Deleter<VkDevice> create_device(
+        const DeviceCreateInfo& create_info,
+        VkPhysicalDevice        physical_device) {
+        
+        return create<VkDevice>(
+            vkCreateDevice,
+            vkDestroyDevice,
+            "Failed to create device.",
+            physical_device,
+            create_info
+        );
+    }
+
     Device::Device(
         const DeviceCreateInfo& create_info,
         VkPhysicalDevice        physical_device) :
