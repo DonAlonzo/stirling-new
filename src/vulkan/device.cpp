@@ -35,4 +35,8 @@ namespace stirling { namespace vulkan {
         return {create_info, device};
     }
 
+    CommandPool Device::create_command_pool(const CommandPoolCreateInfo& create_info) const {
+        return {create_info, device};
+    }
+
 }}

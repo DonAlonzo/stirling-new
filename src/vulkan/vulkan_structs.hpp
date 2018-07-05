@@ -253,36 +253,6 @@ namespace stirling { namespace vulkan {
     };
     typedef Wrapper<FramebufferCreateInfoData, VkFramebufferCreateInfo> FramebufferCreateInfo;
 
-    struct CommandPoolCreateInfoData {
-        VkCommandPoolCreateFlags flags;
-        uint32_t                 queue_family_index;
-
-        inline operator const VkCommandPoolCreateInfo() const {
-            return {
-                .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-                .flags            = flags,
-                .queueFamilyIndex = queue_family_index
-            };
-        }
-    };
-    typedef Wrapper<CommandPoolCreateInfoData, VkCommandPoolCreateInfo> CommandPoolCreateInfo;
-
-    struct CommandBufferAllocateInfoData {
-        VkCommandPool        command_pool;
-        VkCommandBufferLevel level;
-        uint32_t             command_buffer_count;
-
-        inline operator const VkCommandBufferAllocateInfo() const {
-            return {
-                .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                .commandPool        = command_pool,
-                .level              = level,
-                .commandBufferCount = command_buffer_count
-            };
-        }
-    };
-    typedef Wrapper<CommandBufferAllocateInfoData, VkCommandBufferAllocateInfo> CommandBufferAllocateInfo;
-
     struct DescriptorSetAllocateInfoData {
         VkDescriptorPool                   descriptor_pool;
         std::vector<VkDescriptorSetLayout> set_layouts;

@@ -277,19 +277,6 @@ namespace stirling { namespace vulkan {
         return fences;
     }
 
-    inline Deleter<VkCommandPool> create_command_pool(
-        const CommandPoolCreateInfo& create_info,
-        VkDevice                     device) {
-        
-        return create<VkCommandPool>(
-            vkCreateCommandPool,
-            vkDestroyCommandPool,
-            device,
-            "Failed to create command pool.",
-            create_info
-        );
-    }
-
     inline Deleter<VkDescriptorPool> create_descriptor_pool(
         const DescriptorPoolCreateInfo& create_info,
         VkDevice                        device) {

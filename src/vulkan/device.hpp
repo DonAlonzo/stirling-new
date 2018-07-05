@@ -1,6 +1,8 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "command_buffer.hpp"
+#include "command_pool.hpp"
 #include "deleter.hpp"
 #include "device_memory.hpp"
 #include "vulkan_structs.hpp"
@@ -37,6 +39,7 @@ namespace stirling { namespace vulkan {
         VkMemoryRequirements get_buffer_memory_requirements(VkBuffer buffer) const;
         DeviceMemory allocate_memory(const MemoryAllocateInfo& allocate_info) const;
         Buffer create_buffer(const BufferCreateInfo& create_info) const;
+        CommandPool create_command_pool(const CommandPoolCreateInfo& create_info) const;
 
     private:
         Deleter<VkDevice> device;

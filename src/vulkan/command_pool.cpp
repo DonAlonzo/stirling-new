@@ -1,0 +1,43 @@
+#include "device.hpp"
+#include "vulkan.hpp"
+
+namespace stirling { namespace vulkan {
+
+    inline Deleter<VkCommandPool> create_command_pool(
+        const CommandPoolCreateInfo& create_info,
+        VkDevice                     device) {
+        
+        return create<VkCommandPool>(
+            vkCreateCommandPool,
+            vkDestroyCommandPool,
+            device,
+            "Failed to create command pool.",
+            create_info
+        );
+    }
+
+    CommandPool::CommandPool(
+        const CommandPoolCreateInfo& create_info,
+        VkDevice                     device) :
+
+        command_pool (create_command_pool(create_info, device)),
+        device       (device) {
+    }
+
+    std::vector<CommandBuffer> CommandPool::allocate_command_buffers(const CommandBufferAllocateInfo& allocate_info) const {
+        const VkCommandBufferAllocateInfo vk_allocate_info {
+            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .commandPool        = command_pool,
+            .level              = allocate_info.level,
+            .commandBufferCount = allocate_info.command_buffer_count
+        };
+
+        std::vector<VkCommandBuffer> command_buffers{allocate_info.command_buffer_count};
+        vulkan_assert(
+            vkAllocateCommandBuffers(device, &vk_allocate_info, command_buffers.data()),
+            "Failed to allocate command buffers."
+        );
+        return {command_buffers.begin(), command_buffers.end()};
+    }
+
+}}

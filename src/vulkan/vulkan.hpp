@@ -24,19 +24,7 @@ namespace stirling { namespace vulkan {
         );
         return descriptor_sets;
     }
-
-    inline std::vector<VkCommandBuffer> allocate_command_buffers(
-        const CommandBufferAllocateInfo& allocate_info,
-        VkDevice                         device) {
-        
-        std::vector<VkCommandBuffer> command_buffers{allocate_info.data().commandBufferCount};
-        vulkan_assert(
-            vkAllocateCommandBuffers(device, allocate_info, command_buffers.data()),
-            "Failed to allocate command buffers."
-        );
-        return command_buffers;
-    }
-
+    
     inline void update_descriptor_sets(
         VkDevice                               device,
         const std::vector<WriteDescriptorSet>& descriptor_writes,
@@ -52,10 +40,10 @@ namespace stirling { namespace vulkan {
     }
 
     inline void cmd_copy_buffer(
-        VkCommandBuffer           command_buffer,
-        VkBuffer                  src_buffer,
-        VkBuffer                  dst_buffer,
-        std::vector<VkBufferCopy> regions) {
+        VkCommandBuffer                  command_buffer,
+        VkBuffer                         src_buffer,
+        VkBuffer                         dst_buffer,
+        const std::vector<VkBufferCopy>& regions) {
 
         vkCmdCopyBuffer(
             command_buffer,
@@ -67,10 +55,10 @@ namespace stirling { namespace vulkan {
     }
 
     inline void cmd_bind_vertex_buffers(
-        VkCommandBuffer           command_buffer,
-        uint32_t                  first_binding,
-        std::vector<VkBuffer>     buffers,
-        std::vector<VkDeviceSize> offsets) {
+        VkCommandBuffer                  command_buffer,
+        uint32_t                         first_binding,
+        const std::vector<VkBuffer>&     buffers,
+        const std::vector<VkDeviceSize>& offsets) {
 
         assert(buffers.size() == offsets.size());
         vkCmdBindVertexBuffers(
@@ -119,9 +107,19 @@ namespace stirling { namespace vulkan {
     inline void begin_command_buffer(
         const CommandBufferBeginInfo& begin_info,
         VkCommandBuffer               command_buffer) {
+        
         vulkan_assert(
             vkBeginCommandBuffer(command_buffer, begin_info),
             "Failed to begin command buffer."
+        );
+    }
+
+    inline void end_command_buffer(
+        VkCommandBuffer command_buffer) {
+        
+        vulkan_assert(
+            vkEndCommandBuffer(command_buffer),
+            "Failed to end command buffer."
         );
     }
 

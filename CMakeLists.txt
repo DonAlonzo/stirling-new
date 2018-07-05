@@ -23,6 +23,8 @@ set(${PROJECT_NAME}_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_sources(${PROJECT_NAME}
     PUBLIC
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/buffer.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/command_buffer.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/command_pool.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/deleter.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device_memory.cpp

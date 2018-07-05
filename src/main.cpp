@@ -180,10 +180,10 @@ namespace stirling {
         }}, device);
 
         // Create command pool
-        const auto command_pool = vulkan::create_command_pool({{
+        const auto command_pool = device.create_command_pool({{
             .flags              = 0,
             .queue_family_index = queue_families.graphics_queue
-        }}, device);
+        }});
 
         // Create swapchain
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
@@ -482,25 +482,28 @@ namespace stirling {
             staging_buffer_memory.map().copy(vertices.data(), vertex_buffer_size);
 
             // Copy staging buffer to vertex buffer
-            const auto command_buffer = vulkan::allocate_command_buffers({{
-                .command_pool         = command_pool,
+            const auto command_buffer = command_pool.allocate_command_buffers({
                 .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
                 .command_buffer_count = 1
-            }}, device)[0];
+            })[0];
 
-            vulkan::begin_command_buffer({{
+            command_buffer.begin({{
                 .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-            }}, command_buffer);
+            }});
 
-            vulkan::cmd_copy_buffer(command_buffer, staging_buffer, vertex_buffer, {
+            command_buffer.copy_buffer(
+                staging_buffer,
+                vertex_buffer,
                 {
-                    .srcOffset = 0,
-                    .dstOffset = 0,
-                    .size = vertex_buffer_size
+                    {
+                        .srcOffset = 0,
+                        .dstOffset = 0,
+                        .size = vertex_buffer_size
+                    }
                 }
-            });
+            );
 
-            vkEndCommandBuffer(command_buffer);
+            command_buffer.end();
 
             vulkan::queue_submit({
                 {{
@@ -512,7 +515,7 @@ namespace stirling {
 
             vkQueueWaitIdle(graphics_queue);
 
-            vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+            // TODO vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
         }
 
         // Calculate index buffer size
@@ -569,25 +572,28 @@ namespace stirling {
             staging_buffer_memory.map().copy(indices.data(), index_buffer_size);
 
             // Copy staging buffer to index buffer
-            const auto command_buffer = vulkan::allocate_command_buffers({{
-                .command_pool         = command_pool,
+            const auto command_buffer = command_pool.allocate_command_buffers({
                 .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
                 .command_buffer_count = 1
-            }}, device)[0];
+            })[0];
 
-            vulkan::begin_command_buffer({{
+            command_buffer.begin({{
                 .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-            }}, command_buffer);
+            }});
 
-            vulkan::cmd_copy_buffer(command_buffer, staging_buffer, index_buffer, {
+            command_buffer.copy_buffer(
+                staging_buffer,
+                index_buffer,
                 {
-                    .srcOffset = 0,
-                    .dstOffset = 0,
-                    .size = index_buffer_size
+                    {
+                        .srcOffset = 0,
+                        .dstOffset = 0,
+                        .size = index_buffer_size
+                    }
                 }
-            });
+            );
 
-            vkEndCommandBuffer(command_buffer);
+            command_buffer.end();
 
             vulkan::queue_submit({
                 {{
@@ -599,7 +605,7 @@ namespace stirling {
 
             vkQueueWaitIdle(graphics_queue);
 
-            vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+            // TODO vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
         }
 
         // Create uniform buffers
@@ -666,18 +672,17 @@ namespace stirling {
         }
 
         // Allocate command buffers
-        const auto command_buffers = vulkan::allocate_command_buffers({{
-            .command_pool         = command_pool,
+        const auto command_buffers = command_pool.allocate_command_buffers({
             .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .command_buffer_count = static_cast<uint32_t>(swapchain_framebuffers.size())
-        }}, device);
+        });
 
         // Record command buffers
         for (size_t i = 0; i < command_buffers.size(); ++i) {
             // Begin command buffer
-            vulkan::begin_command_buffer({{
+            command_buffers[i].begin({{
                 .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-            }}, command_buffers[i]);
+            }});
 
             // Begin render pass
             vulkan::begin_render_pass({{
