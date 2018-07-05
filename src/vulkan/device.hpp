@@ -33,6 +33,7 @@ namespace stirling { namespace vulkan {
 
         inline operator const VkDevice() const { return device; }
         
+        VkMemoryRequirements get_buffer_memory_requirements(VkBuffer buffer) const;
         DeviceMemory allocate_memory(const MemoryAllocateInfo& allocate_info) const;
 
     private:

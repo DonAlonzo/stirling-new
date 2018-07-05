@@ -439,8 +439,7 @@ namespace stirling {
         }}, device};
 
         // Find memory requirements for vertex buffer
-        VkMemoryRequirements memory_requirements;
-        vkGetBufferMemoryRequirements(device, vertex_buffer, &memory_requirements);
+        auto memory_requirements = device.get_buffer_memory_requirements(vertex_buffer);
 
         // Allocate memory for vertex buffer
         const auto vertex_buffer_memory = device.allocate_memory({{
@@ -464,7 +463,7 @@ namespace stirling {
             }}, device};
 
             // Find memory requirements for staging buffer
-            vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
+            memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
 
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({{
@@ -530,7 +529,7 @@ namespace stirling {
         }}, device};
 
         // Find memory requirements for index buffer
-        vkGetBufferMemoryRequirements(device, index_buffer, &memory_requirements);
+        memory_requirements = device.get_buffer_memory_requirements(index_buffer);
 
         // Allocate memory for index buffer
         const auto index_buffer_memory = device.allocate_memory({{
@@ -554,7 +553,7 @@ namespace stirling {
             }}, device};
 
             // Find memory requirements for staging buffer
-            vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
+            memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
 
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({{
@@ -621,7 +620,7 @@ namespace stirling {
             }}, device});
 
             // Find memory requirements for uniform buffer
-            vkGetBufferMemoryRequirements(device, uniform_buffers[i], &memory_requirements);
+            memory_requirements = device.get_buffer_memory_requirements(uniform_buffers[i]);
 
             // Allocate memory for uniform buffer
             uniform_buffer_memories.emplace_back(vulkan::DeviceMemory{{{
