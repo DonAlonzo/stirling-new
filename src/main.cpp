@@ -432,11 +432,11 @@ namespace stirling {
         const auto vertex_buffer_size = sizeof(Vertex) * vertices.size();
 
         // Create vertex buffer
-        const vulkan::Buffer vertex_buffer{{{
+        const auto vertex_buffer = device.create_buffer({{
             .size         = vertex_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }}, device};
+        }});
 
         // Find memory requirements for vertex buffer
         auto memory_requirements = device.get_buffer_memory_requirements(vertex_buffer);
@@ -456,11 +456,11 @@ namespace stirling {
 
         {
             // Create staging buffer
-            const vulkan::Buffer staging_buffer{{{
+            const auto staging_buffer = device.create_buffer({{
                 .size         = vertex_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device};
+            }});
 
             // Find memory requirements for staging buffer
             memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
@@ -479,10 +479,7 @@ namespace stirling {
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
 
             // Copy vertex data to staging buffer
-            void* data;
-            vkMapMemory(device, staging_buffer_memory, 0, vertex_buffer_size, 0, &data);
-            memcpy(data, vertices.data(), static_cast<size_t>(vertex_buffer_size));
-            vkUnmapMemory(device, staging_buffer_memory);
+            staging_buffer_memory.map().copy(vertices.data(), vertex_buffer_size);
 
             // Copy staging buffer to vertex buffer
             const auto command_buffer = vulkan::allocate_command_buffers({{
@@ -522,11 +519,11 @@ namespace stirling {
         const auto index_buffer_size = sizeof(indices[0]) * indices.size();
 
         // Create index buffer
-        const vulkan::Buffer index_buffer{{{
+        const auto index_buffer = device.create_buffer({{
             .size         = index_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }}, device};
+        }});
 
         // Find memory requirements for index buffer
         memory_requirements = device.get_buffer_memory_requirements(index_buffer);
@@ -546,11 +543,11 @@ namespace stirling {
 
         {
             // Create staging buffer
-            const vulkan::Buffer staging_buffer{{{
+            const auto staging_buffer = device.create_buffer({{
                 .size         = index_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device};
+            }});
 
             // Find memory requirements for staging buffer
             memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
@@ -568,11 +565,8 @@ namespace stirling {
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
 
-            // Copy vertex data to staging buffer
-            void* data;
-            vkMapMemory(device, staging_buffer_memory, 0, index_buffer_size, 0, &data);
-            memcpy(data, indices.data(), static_cast<size_t>(index_buffer_size));
-            vkUnmapMemory(device, staging_buffer_memory);
+            // Copy index data to staging buffer
+            staging_buffer_memory.map().copy(indices.data(), index_buffer_size);
 
             // Copy staging buffer to index buffer
             const auto command_buffer = vulkan::allocate_command_buffers({{
@@ -613,11 +607,11 @@ namespace stirling {
         std::vector<vulkan::DeviceMemory> uniform_buffer_memories;
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
             // Create uniform buffer
-            uniform_buffers.emplace_back(vulkan::Buffer{{{
+            uniform_buffers.emplace_back(device.create_buffer({{
                 .size         = sizeof(UniformBufferObject),
                 .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device});
+            }}));
 
             // Find memory requirements for uniform buffer
             memory_requirements = device.get_buffer_memory_requirements(uniform_buffers[i]);
@@ -754,10 +748,7 @@ namespace stirling {
                 ubo.projection[1][1] *= -1;
 
                 // Copy uniform buffer object to uniform buffer
-                void* data;
-                vkMapMemory(device, uniform_buffer_memories[image_index], 0, sizeof(ubo), 0, &data);
-                memcpy(data, &ubo, sizeof(ubo));
-                vkUnmapMemory(device, uniform_buffer_memories[image_index]);
+                uniform_buffer_memories[image_index].map().copy(&ubo, sizeof(ubo));
             }
 
             // Submit command buffer to graphics queue

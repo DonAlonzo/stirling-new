@@ -31,4 +31,8 @@ namespace stirling { namespace vulkan {
         return {allocate_info, device};
     }
 
+    Buffer Device::create_buffer(const BufferCreateInfo& create_info) const {
+        return {create_info, device};
+    }
+
 }}

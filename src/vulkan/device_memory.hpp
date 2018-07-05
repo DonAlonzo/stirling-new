@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <functional>
+
 namespace stirling { namespace vulkan {
 
     struct MemoryAllocateInfoData {
@@ -21,6 +23,25 @@ namespace stirling { namespace vulkan {
     };
     typedef Wrapper<MemoryAllocateInfoData, VkMemoryAllocateInfo> MemoryAllocateInfo;
 
+    struct DeviceMemoryMapping {
+        DeviceMemoryMapping(
+            VkDevice       device,
+            VkDeviceMemory memory,
+            VkDeviceSize   offset,
+            VkDeviceSize   size);
+
+        ~DeviceMemoryMapping();
+
+        DeviceMemoryMapping(DeviceMemoryMapping&&) = default;
+        DeviceMemoryMapping& operator=(DeviceMemoryMapping&&) = default;
+
+        void copy(const void* src, size_t size);
+
+    private:
+        void*                 data;
+        std::function<void()> deleter;
+    };
+
     struct DeviceMemory {
         DeviceMemory(
             const MemoryAllocateInfo& allocate_info,
@@ -28,8 +49,11 @@ namespace stirling { namespace vulkan {
 
         inline operator const VkDeviceMemory() const { return memory; }
 
+        DeviceMemoryMapping map(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
+
     private:
         Deleter<VkDeviceMemory> memory;
+        VkDevice                device;
     };
 
 }}
