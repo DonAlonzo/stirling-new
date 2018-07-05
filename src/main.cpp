@@ -443,14 +443,14 @@ namespace stirling {
         vkGetBufferMemoryRequirements(device, vertex_buffer, &memory_requirements);
 
         // Allocate memory for vertex buffer
-        const vulkan::DeviceMemory vertex_buffer_memory{{{
+        const auto vertex_buffer_memory = device.allocate_memory({{
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }}, device};
+        }});
 
         // Bind memory to vertex buffer
         vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
@@ -467,14 +467,14 @@ namespace stirling {
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
 
             // Allocate memory for staging buffer
-            const vulkan::DeviceMemory staging_buffer_memory{{{
+            const auto staging_buffer_memory = device.allocate_memory({{
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device};
+            }});
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
@@ -533,14 +533,14 @@ namespace stirling {
         vkGetBufferMemoryRequirements(device, index_buffer, &memory_requirements);
 
         // Allocate memory for index buffer
-        const vulkan::DeviceMemory index_buffer_memory{{{
+        const auto index_buffer_memory = device.allocate_memory({{
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }}, device};
+        }});
 
         // Bind memory to index buffer
         vkBindBufferMemory(device, index_buffer, index_buffer_memory, 0);
@@ -557,14 +557,14 @@ namespace stirling {
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
 
             // Allocate memory for staging buffer
-            const vulkan::DeviceMemory staging_buffer_memory{{{
+            const auto staging_buffer_memory = device.allocate_memory({{
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device};
+            }});
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);

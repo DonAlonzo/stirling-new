@@ -1,6 +1,7 @@
 #pragma once
 
 #include "deleter.hpp"
+#include "device_memory.hpp"
 #include "vulkan_structs.hpp"
 
 #include <vulkan/vulkan.h>
@@ -31,6 +32,8 @@ namespace stirling { namespace vulkan {
             VkPhysicalDevice        physical_device);
 
         inline operator const VkDevice() const { return device; }
+        
+        DeviceMemory allocate_memory(const MemoryAllocateInfo& allocate_info) const;
 
     private:
         Deleter<VkDevice> device;
