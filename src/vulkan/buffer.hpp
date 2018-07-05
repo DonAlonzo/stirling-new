@@ -1,7 +1,6 @@
 #pragma once
 
 #include "deleter.hpp"
-#include "device_memory.hpp"
 #include "vulkan_structs.hpp"
 
 #include <vulkan/vulkan.h>
@@ -14,7 +13,7 @@ namespace stirling { namespace vulkan {
             VkDevice                device);
 
         inline operator const VkBuffer() const { return buffer; }
-         
+
     private:
         Deleter<VkBuffer> buffer;
     };

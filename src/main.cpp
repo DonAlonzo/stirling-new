@@ -1,5 +1,6 @@
-#include "vulkan/deleter.hpp"
 #include "vulkan/buffer.hpp"
+#include "vulkan/deleter.hpp"
+#include "vulkan/device_memory.hpp"
 #include "vulkan/vulkan.hpp"
 #include "file.hpp"
 #include "main.hpp"
@@ -441,14 +442,14 @@ namespace stirling {
         vkGetBufferMemoryRequirements(device, vertex_buffer, &memory_requirements);
 
         // Allocate memory for vertex buffer
-        const auto vertex_buffer_memory = vulkan::allocate_memory({{
+        const vulkan::DeviceMemory vertex_buffer_memory{{{
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }}, device);
+        }}, device};
 
         // Bind memory to vertex buffer
         vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
@@ -465,14 +466,14 @@ namespace stirling {
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
 
             // Allocate memory for staging buffer
-            const auto staging_buffer_memory = vulkan::allocate_memory({{
+            const vulkan::DeviceMemory staging_buffer_memory{{{
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device);
+            }}, device};
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
@@ -531,14 +532,14 @@ namespace stirling {
         vkGetBufferMemoryRequirements(device, index_buffer, &memory_requirements);
 
         // Allocate memory for index buffer
-        const auto index_buffer_memory = vulkan::allocate_memory({{
+        const vulkan::DeviceMemory index_buffer_memory{{{
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }}, device);
+        }}, device};
 
         // Bind memory to index buffer
         vkBindBufferMemory(device, index_buffer, index_buffer_memory, 0);
@@ -555,14 +556,14 @@ namespace stirling {
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
 
             // Allocate memory for staging buffer
-            const auto staging_buffer_memory = vulkan::allocate_memory({{
+            const vulkan::DeviceMemory staging_buffer_memory{{{
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device);
+            }}, device};
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
@@ -609,7 +610,7 @@ namespace stirling {
 
         // Create uniform buffers
         std::vector<vulkan::Buffer>       uniform_buffers;
-        std::vector<Deleter<VkDeviceMemory>> uniform_buffer_memories;
+        std::vector<vulkan::DeviceMemory> uniform_buffer_memories;
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
             // Create uniform buffer
             uniform_buffers.emplace_back(vulkan::Buffer{{{
@@ -622,14 +623,14 @@ namespace stirling {
             vkGetBufferMemoryRequirements(device, uniform_buffers[i], &memory_requirements);
 
             // Allocate memory for uniform buffer
-            uniform_buffer_memories.emplace_back(vulkan::allocate_memory({{
+            uniform_buffer_memories.emplace_back(vulkan::DeviceMemory{{{
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device));
+            }}, device});
 
             // Bind memory to uniform buffer
             vkBindBufferMemory(device, uniform_buffers[i], uniform_buffer_memories[i], 0);

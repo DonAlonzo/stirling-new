@@ -1,9 +1,9 @@
-#include "device_memory.hpp"
+#include "device.hpp"
 #include "vulkan.hpp"
 
 namespace stirling { namespace vulkan {
 
-    DeviceMemory::DeviceMemory(
+    Device::Device(
         const MemoryAllocateInfo& allocate_info,
         VkDevice                  device) :
 

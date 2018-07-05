@@ -97,9 +97,9 @@ namespace stirling { namespace vulkan {
 
     struct DeviceCreateInfoData {
         std::vector<DeviceQueueCreateInfo> queues;
-        std::vector<const char*>                 enabled_layers;
-        std::vector<const char*>                 enabled_extensions;
-        VkPhysicalDeviceFeatures                 enabled_features;
+        std::vector<const char*>           enabled_layers;
+        std::vector<const char*>           enabled_extensions;
+        VkPhysicalDeviceFeatures           enabled_features;
 
         inline operator const VkDeviceCreateInfo() const {
             return {
