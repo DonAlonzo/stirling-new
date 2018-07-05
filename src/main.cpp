@@ -1,14 +1,15 @@
 #include "vulkan/buffer.hpp"
 #include "vulkan/deleter.hpp"
+#include "vulkan/device.hpp"
 #include "vulkan/device_memory.hpp"
+#include "vulkan/instance.hpp"
 #include "vulkan/vulkan.hpp"
+
 #include "file.hpp"
 #include "main.hpp"
 #include "window.hpp"
 
 #include <vulkan/vulkan.h>
-
-#include <GLFW/glfw3.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -46,7 +47,7 @@ namespace stirling {
         enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
         // Create instance
-        const auto instance = vulkan::create_instance({{
+        const vulkan::Instance instance{{{
             .application_info = {{
                 .application_name    = "Stirling Engine Demo",
                 .application_version = VK_MAKE_VERSION(1, 0, 0),
@@ -58,16 +59,16 @@ namespace stirling {
                 "VK_LAYER_LUNARG_standard_validation"
             },
             .enabled_extensions = enabled_extensions
-        }});
+        }}};
 
         // Create debug report callback
-        const auto debug_callback_handle = vulkan::create_debug_report_callback({{
+        const auto debug_callback_handle = instance.create_debug_report_callback({{
             .flags     = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
             .callback  = debug_callback,
-        }}, instance);
+        }});
 
         // Create window surface
-        const auto surface = vulkan::create_surface(instance, window);
+        const auto surface = instance.create_surface(window);
 
         // Pick physical device
         const auto physical_device = [instance]() {
@@ -84,7 +85,7 @@ namespace stirling {
         const auto queue_families = vulkan::get_queue_families(physical_device, surface);
 
         // Create device
-        const auto device = vulkan::create_device({{
+        const vulkan::Device device{{{
             .queues = [&queue_families]() {
                 std::vector<vulkan::DeviceQueueCreateInfo> create_infos;
                 // Only one queue per unique queue family index
@@ -105,7 +106,7 @@ namespace stirling {
             .enabled_features = {
                 .geometryShader  = VK_TRUE
             }
-        }}, physical_device);
+        }}, physical_device};
 
         // Retrieve queue handles
         const auto graphics_queue = vulkan::get_queue(device, queue_families.graphics_queue, 0);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deleter.hpp"
 #include "vulkan_helpers.hpp"
 
 #include <vulkan/vulkan.h>

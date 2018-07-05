@@ -4,10 +4,10 @@
 namespace stirling { namespace vulkan {
 
     Device::Device(
-        const MemoryAllocateInfo& allocate_info,
-        VkDevice                  device) :
+        const DeviceCreateInfo& create_info,
+        VkPhysicalDevice        physical_device) :
 
-        memory (allocate_memory(allocate_info, device)) {
+        device (create_device(create_info, physical_device)) {
     }
 
 }}

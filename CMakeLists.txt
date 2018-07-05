@@ -24,7 +24,10 @@ target_sources(${PROJECT_NAME}
     PUBLIC
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/buffer.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/deleter.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device_memory.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/instance.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/physical_device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/file.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/main.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/window.cpp)

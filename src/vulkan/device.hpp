@@ -9,13 +9,13 @@ namespace stirling { namespace vulkan {
 
     struct Device {
         Device(
-            const MemoryAllocateInfo& allocate_info,
-            VkDevice                  device);
+            const DeviceCreateInfo& create_info,
+            VkPhysicalDevice        physical_device);
 
-        inline operator const VkDevice() const { return memory; }
+        inline operator const VkDevice() const { return device; }
 
     private:
-        Deleter<VkDevice> memory;
+        Deleter<VkDevice> device;
     };
 
 }}
