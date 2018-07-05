@@ -10,9 +10,7 @@ cmake ..
 make
 
 # Build shaders
-glslangValidator -V ../shaders/shader.vert
-glslangValidator -V ../shaders/shader.frag
-glslangValidator -V ../shaders/shader.geom
+glslangValidator -V ../shaders/*
 
 #Run Stirling Engine Demo
 echo
