@@ -7,12 +7,21 @@ namespace stirling { namespace vulkan {
         const DeviceCreateInfo& create_info,
         VkPhysicalDevice        physical_device) {
         
+        const VkDeviceCreateInfo vk_create_info {
+            .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .queueCreateInfoCount    = static_cast<uint32_t>(create_info.queues.size()),
+            .pQueueCreateInfos       = cast_vector<const VkDeviceQueueCreateInfo*>(create_info.queues),
+            .enabledExtensionCount   = static_cast<uint32_t>(create_info.enabled_extensions.size()),
+            .ppEnabledExtensionNames = create_info.enabled_extensions.data(),
+            .pEnabledFeatures        = &create_info.enabled_features
+        };
+
         return create<VkDevice>(
             vkCreateDevice,
             vkDestroyDevice,
             "Failed to create device.",
             physical_device,
-            create_info
+            &vk_create_info
         );
     }
 

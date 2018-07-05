@@ -47,7 +47,7 @@ namespace stirling {
         enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
         // Create instance
-        const vulkan::Instance instance{{{
+        const vulkan::Instance instance{{
             .application_info = {{
                 .application_name    = "Stirling Engine Demo",
                 .application_version = VK_MAKE_VERSION(1, 0, 0),
@@ -59,7 +59,7 @@ namespace stirling {
                 "VK_LAYER_LUNARG_standard_validation"
             },
             .enabled_extensions = enabled_extensions
-        }}};
+        }};
 
         // Create debug report callback
         const auto debug_callback_handle = instance.create_debug_report_callback({{
@@ -85,7 +85,7 @@ namespace stirling {
         const auto queue_families = physical_device.get_queue_families(surface);
 
         // Create device
-        const vulkan::Device device{{{
+        const vulkan::Device device{{
             .queues = [&queue_families]() {
                 std::vector<vulkan::DeviceQueueCreateInfo> create_infos;
                 // Only one queue per unique queue family index
@@ -106,7 +106,7 @@ namespace stirling {
             .enabled_features = {
                 .geometryShader  = VK_TRUE
             }
-        }}, physical_device};
+        }, physical_device};
 
         // Retrieve queue handles
         const auto graphics_queue = vulkan::get_queue(device, queue_families.graphics_queue, 0);
@@ -180,10 +180,10 @@ namespace stirling {
         }}, device);
 
         // Create command pool
-        const auto command_pool = device.create_command_pool({{
+        const auto command_pool = device.create_command_pool({
             .flags              = 0,
             .queue_family_index = queue_families.graphics_queue
-        }});
+        });
 
         // Create swapchain
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
@@ -432,48 +432,48 @@ namespace stirling {
         const auto vertex_buffer_size = sizeof(Vertex) * vertices.size();
 
         // Create vertex buffer
-        const auto vertex_buffer = device.create_buffer({{
+        const auto vertex_buffer = device.create_buffer({
             .size         = vertex_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }});
+        });
 
         // Find memory requirements for vertex buffer
         auto memory_requirements = device.get_buffer_memory_requirements(vertex_buffer);
 
         // Allocate memory for vertex buffer
-        const auto vertex_buffer_memory = device.allocate_memory({{
+        const auto vertex_buffer_memory = device.allocate_memory({
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }});
+        });
 
         // Bind memory to vertex buffer
         vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
 
         {
             // Create staging buffer
-            const auto staging_buffer = device.create_buffer({{
+            const auto staging_buffer = device.create_buffer({
                 .size         = vertex_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }});
+            });
 
             // Find memory requirements for staging buffer
             memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
 
             // Allocate memory for staging buffer
-            const auto staging_buffer_memory = device.allocate_memory({{
+            const auto staging_buffer_memory = device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }});
+            });
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
@@ -523,48 +523,48 @@ namespace stirling {
         const auto index_buffer_size = sizeof(indices[0]) * indices.size();
 
         // Create index buffer
-        const auto index_buffer = device.create_buffer({{
+        const auto index_buffer = device.create_buffer({
             .size         = index_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }});
+        });
 
         // Find memory requirements for index buffer
         memory_requirements = device.get_buffer_memory_requirements(index_buffer);
 
         // Allocate memory for index buffer
-        const auto index_buffer_memory = device.allocate_memory({{
+        const auto index_buffer_memory = device.allocate_memory({
             .allocation_size   = memory_requirements.size,
             .memory_type_index = vulkan::find_memory_type(
                 physical_device,
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
-        }});
+        });
 
         // Bind memory to index buffer
         vkBindBufferMemory(device, index_buffer, index_buffer_memory, 0);
 
         {
             // Create staging buffer
-            const auto staging_buffer = device.create_buffer({{
+            const auto staging_buffer = device.create_buffer({
                 .size         = index_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }});
+            });
 
             // Find memory requirements for staging buffer
             memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
 
             // Allocate memory for staging buffer
-            const auto staging_buffer_memory = device.allocate_memory({{
+            const auto staging_buffer_memory = device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }});
+            });
 
             // Bind memory to staging buffer
             vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
@@ -616,24 +616,24 @@ namespace stirling {
         std::vector<vulkan::DeviceMemory> uniform_buffer_memories;
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
             // Create uniform buffer
-            uniform_buffers.emplace_back(device.create_buffer({{
+            uniform_buffers.emplace_back(device.create_buffer({
                 .size         = sizeof(UniformBufferObject),
                 .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}));
+            }));
 
             // Find memory requirements for uniform buffer
             memory_requirements = device.get_buffer_memory_requirements(uniform_buffers[i]);
 
             // Allocate memory for uniform buffer
-            uniform_buffer_memories.emplace_back(vulkan::DeviceMemory{{{
+            uniform_buffer_memories.emplace_back(device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
                 .memory_type_index = vulkan::find_memory_type(
                     physical_device,
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
-            }}, device});
+            }));
 
             // Bind memory to uniform buffer
             vkBindBufferMemory(device, uniform_buffers[i], uniform_buffer_memories[i], 0);

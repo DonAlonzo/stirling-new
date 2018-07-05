@@ -9,12 +9,18 @@ namespace stirling { namespace vulkan {
         const MemoryAllocateInfo& allocate_info,
         VkDevice                  device) {
 
+        const VkMemoryAllocateInfo vk_allocate_info {
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize  = allocate_info.allocation_size,
+            .memoryTypeIndex = allocate_info.memory_type_index
+        };
+
         return create<VkDeviceMemory>(
             vkAllocateMemory,
             vkFreeMemory,
             device,
             "Failed to allocate memory.",
-            allocate_info
+            &vk_allocate_info
         );
     }
 

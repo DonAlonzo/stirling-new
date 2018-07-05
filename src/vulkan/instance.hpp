@@ -13,23 +13,11 @@
 
 namespace stirling { namespace vulkan {
 
-    struct InstanceCreateInfoData {
+    struct InstanceCreateInfo {
         ApplicationInfo          application_info;
         std::vector<const char*> enabled_layers;
         std::vector<const char*> enabled_extensions;
-
-        inline operator const VkInstanceCreateInfo() const {
-            return {
-                .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                .pApplicationInfo        = application_info,
-                .enabledLayerCount       = static_cast<uint32_t>(enabled_layers.size()),
-                .ppEnabledLayerNames     = enabled_layers.data(),
-                .enabledExtensionCount   = static_cast<uint32_t>(enabled_extensions.size()),
-                .ppEnabledExtensionNames = enabled_extensions.data()
-            };
-        }
     };
-    typedef Wrapper<InstanceCreateInfoData, VkInstanceCreateInfo> InstanceCreateInfo;
 
     struct Instance {
         Instance(const InstanceCreateInfo& create_info);

@@ -7,12 +7,18 @@ namespace stirling { namespace vulkan {
         const CommandPoolCreateInfo& create_info,
         VkDevice                     device) {
         
+        const VkCommandPoolCreateInfo vk_create_info {
+            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .flags            = create_info.flags,
+            .queueFamilyIndex = create_info.queue_family_index
+        };
+
         return create<VkCommandPool>(
             vkCreateCommandPool,
             vkDestroyCommandPool,
             device,
             "Failed to create command pool.",
-            create_info
+            &vk_create_info
         );
     }
 

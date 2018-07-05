@@ -7,25 +7,16 @@
 
 namespace stirling { namespace vulkan {
 
-    struct CommandPoolCreateInfoData {
+    struct CommandPoolCreateInfo {
         VkCommandPoolCreateFlags flags;
         uint32_t                 queue_family_index;
-
-        inline operator const VkCommandPoolCreateInfo() const {
-            return {
-                .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-                .flags            = flags,
-                .queueFamilyIndex = queue_family_index
-            };
-        }
     };
-    typedef Wrapper<CommandPoolCreateInfoData, VkCommandPoolCreateInfo> CommandPoolCreateInfo;
 
     struct CommandBufferAllocateInfo {
         VkCommandBufferLevel level;
         uint32_t             command_buffer_count;
     };
-    
+
     struct CommandPool {
         CommandPool(
             const CommandPoolCreateInfo& create_info,

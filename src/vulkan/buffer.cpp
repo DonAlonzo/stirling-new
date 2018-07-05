@@ -10,12 +10,21 @@ namespace stirling { namespace vulkan {
         const BufferCreateInfo& create_info,
         VkDevice                device) {
 
+        const VkBufferCreateInfo vk_create_info {
+            .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size                  = create_info.size,
+            .usage                 = create_info.usage,
+            .sharingMode           = create_info.sharing_mode,
+            .queueFamilyIndexCount = static_cast<uint32_t>(create_info.queue_family_indices.size()),
+            .pQueueFamilyIndices   = create_info.queue_family_indices.data()
+        };
+
         return create<VkBuffer>(
             vkCreateBuffer,
             vkDestroyBuffer,
             device,
             "Failed to create buffer.",
-            create_info
+            &vk_create_info
         );
     }
 

@@ -5,11 +5,20 @@ namespace stirling { namespace vulkan {
     inline Deleter<VkInstance> create_instance(
         const InstanceCreateInfo& create_info) {
         
+        const VkInstanceCreateInfo vk_create_info {
+            .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pApplicationInfo        = create_info.application_info,
+            .enabledLayerCount       = static_cast<uint32_t>(create_info.enabled_layers.size()),
+            .ppEnabledLayerNames     = create_info.enabled_layers.data(),
+            .enabledExtensionCount   = static_cast<uint32_t>(create_info.enabled_extensions.size()),
+            .ppEnabledExtensionNames = create_info.enabled_extensions.data()
+        };
+
         return create<VkInstance>(
             vkCreateInstance,
             vkDestroyInstance,
             "Failed to create instance.",
-            create_info
+            &vk_create_info
         );
     }
     
