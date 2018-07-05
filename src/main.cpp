@@ -719,7 +719,7 @@ namespace stirling {
             vkCmdEndRenderPass(command_buffers[i]);
 
             // End command buffer
-            vulkan::vulkan_assert(vkEndCommandBuffer(command_buffers[i]), "Failed to record command buffer.");
+            command_buffers[i].end();
         }
 
         // Create semaphores
