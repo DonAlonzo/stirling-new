@@ -3,19 +3,23 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 color;
-};
+namespace stirling {
 
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
-};
+    struct Vertex {
+        glm::vec3 position;
+        glm::vec3 color;
+    };
 
-struct StirlingInstance {
-    StirlingInstance();
+    struct UniformBufferObject {
+        glm::mat4 model;
+        glm::mat4 view;
+        glm::mat4 projection;
+    };
 
-private:
-};
+    struct StirlingInstance {
+        StirlingInstance();
+
+    private:
+    };
+
+}
