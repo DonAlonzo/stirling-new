@@ -22,11 +22,11 @@ add_executable(${PROJECT_NAME} "")
 set(${PROJECT_NAME}_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_sources(${PROJECT_NAME}
     PUBLIC
-        ${${PROJECT_NAME}_SOURCE_DIR}/buffer.cpp
-        ${${PROJECT_NAME}_SOURCE_DIR}/deleter.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/buffer.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/deleter.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device_memory.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/file.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/main.cpp
-        ${${PROJECT_NAME}_SOURCE_DIR}/device_memory.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/window.cpp)
 
 target_include_directories(${PROJECT_NAME}

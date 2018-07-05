@@ -1,7 +1,8 @@
-#include "deleter.hpp"
+#include "vulkan/deleter.hpp"
+#include "vulkan/buffer.hpp"
+#include "vulkan/vulkan.hpp"
 #include "file.hpp"
 #include "main.hpp"
-#include "vulkan.hpp"
 #include "window.hpp"
 
 #include <vulkan/vulkan.h>
@@ -429,11 +430,11 @@ namespace stirling {
         const auto vertex_buffer_size = sizeof(Vertex) * vertices.size();
 
         // Create vertex buffer
-        const auto vertex_buffer = vulkan::create_buffer({{
+        const vulkan::Buffer vertex_buffer{{{
             .size         = vertex_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }}, device);
+        }}, device};
 
         // Find memory requirements for vertex buffer
         VkMemoryRequirements memory_requirements;
@@ -454,11 +455,11 @@ namespace stirling {
 
         {
             // Create staging buffer
-            const auto staging_buffer = vulkan::create_buffer({{
+            const vulkan::Buffer staging_buffer{{{
                 .size         = vertex_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device);
+            }}, device};
 
             // Find memory requirements for staging buffer
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
@@ -520,11 +521,11 @@ namespace stirling {
         const auto index_buffer_size = sizeof(indices[0]) * indices.size();
 
         // Create index buffer
-        const auto index_buffer = vulkan::create_buffer({{
+        const vulkan::Buffer index_buffer{{{
             .size         = index_buffer_size,
             .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-        }}, device);
+        }}, device};
 
         // Find memory requirements for index buffer
         vkGetBufferMemoryRequirements(device, index_buffer, &memory_requirements);
@@ -544,11 +545,11 @@ namespace stirling {
 
         {
             // Create staging buffer
-            const auto staging_buffer = vulkan::create_buffer({{
+            const vulkan::Buffer staging_buffer{{{
                 .size         = index_buffer_size,
                 .usage        = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device);
+            }}, device};
 
             // Find memory requirements for staging buffer
             vkGetBufferMemoryRequirements(device, staging_buffer, &memory_requirements);
@@ -607,15 +608,15 @@ namespace stirling {
         }
 
         // Create uniform buffers
-        std::vector<Deleter<VkBuffer>>       uniform_buffers;
+        std::vector<vulkan::Buffer>       uniform_buffers;
         std::vector<Deleter<VkDeviceMemory>> uniform_buffer_memories;
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
             // Create uniform buffer
-            uniform_buffers.emplace_back(vulkan::create_buffer({{
+            uniform_buffers.emplace_back(vulkan::Buffer{{{
                 .size         = sizeof(UniformBufferObject),
                 .usage        = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 .sharing_mode = VK_SHARING_MODE_EXCLUSIVE,
-            }}, device));
+            }}, device});
 
             // Find memory requirements for uniform buffer
             vkGetBufferMemoryRequirements(device, uniform_buffers[i], &memory_requirements);

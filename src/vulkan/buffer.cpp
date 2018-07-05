@@ -8,8 +8,7 @@ namespace stirling { namespace vulkan {
 
     Buffer::Buffer(
         const BufferCreateInfo& create_info,
-        VkDevice                device,
-        VkPhysicalDevice        physical_device) :
+        VkDevice                device) :
 
         buffer (create_buffer(create_info, device)) {
     };

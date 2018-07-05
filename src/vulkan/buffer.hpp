@@ -11,9 +11,10 @@ namespace stirling { namespace vulkan {
     struct Buffer {
         Buffer(
             const BufferCreateInfo& create_info,
-            VkDevice                device,
-            VkPhysicalDevice        physical_device);
+            VkDevice                device);
 
+        inline operator const VkBuffer() const { return buffer; }
+         
     private:
         Deleter<VkBuffer> buffer;
     };

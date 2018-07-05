@@ -88,7 +88,7 @@ struct Deleter {
     }
 
     operator Handle() const { return handle; }
-    operator bool() const { return handle != nullptr; }
+    operator bool() const { return handle != VK_NULL_HANDLE; }
 
 private:
     Handle handle = VK_NULL_HANDLE;
