@@ -21,14 +21,14 @@ struct QueueFamilyIndices {
 
 template<typename From, typename To>
 struct VulkanWrapper {
-    VulkanWrapper() = default;
+    VulkanWrapper() : to (From{}) {}
     VulkanWrapper(From&& from) : to (from) {}
 
     inline operator const To*() const { return &to; }
     inline const To& data() const { return to; }
 
 private:
-    To to = From{};
+    To to;
 };
 
 struct VulkanApplicationInfoData {
