@@ -503,15 +503,15 @@ namespace stirling {
 
             command_buffer.end();
 
-            vulkan::queue_submit({
+            graphics_queue.queue_submit({
                 {{
                     .command_buffers = {
                         command_buffer
                     },
                 }}
-            }, graphics_queue);
+            });
 
-            vkQueueWaitIdle(graphics_queue);
+            graphics_queue.wait_idle();
 
             //command_pool.free_command_buffers({command_buffer}));
             // TODO vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
@@ -594,15 +594,15 @@ namespace stirling {
 
             command_buffer.end();
 
-            vulkan::queue_submit({
+            graphics_queue.queue_submit({
                 {{
                     .command_buffers = {
                         command_buffer
                     },
                 }}
-            }, graphics_queue);
+            });
 
-            vkQueueWaitIdle(graphics_queue);
+            graphics_queue.wait_idle();
 
 
             //command_pool.free_command_buffers({command_buffer});
@@ -758,7 +758,7 @@ namespace stirling {
             }
 
             // Submit command buffer to graphics queue
-            vulkan::queue_submit({
+            graphics_queue.queue_submit({
                 {{
                     .wait_semaphores = {
                         image_available_semaphores[current_frame]
@@ -771,10 +771,10 @@ namespace stirling {
                         render_finished_semaphores[current_frame]
                     }
                 }}
-            }, graphics_queue, in_flight_fences[current_frame]);
+            }, in_flight_fences[current_frame]);
 
             // Present images
-            vulkan::queue_present({{
+            present_queue.queue_present({{
                 .wait_semaphores = {
                     render_finished_semaphores[current_frame]
                 },
@@ -784,10 +784,10 @@ namespace stirling {
                 .image_indices = {
                     image_index
                 }
-            }}, present_queue);
+            }});
 
             // Wait until queue is idle
-            vkQueueWaitIdle(present_queue);
+            present_queue.wait_idle();
 
             // Advance to next frame
             current_frame = (current_frame + 1) % max_frames_in_flight;
