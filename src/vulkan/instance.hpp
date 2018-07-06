@@ -22,9 +22,7 @@ namespace stirling { namespace vulkan {
     struct Instance {
         Instance(const InstanceCreateInfo& create_info);
 
-        inline operator const VkInstance() const {
-            return instance;
-        }
+        inline operator const VkInstance() const { return instance; }
         
         Deleter<VkDebugReportCallbackEXT> create_debug_report_callback(const DebugReportCallbackCreateInfoEXT& create_info) const;
         Deleter<VkSurfaceKHR> create_surface(GLFWwindow* window) const;
