@@ -24,7 +24,8 @@ namespace stirling { namespace vulkan {
 
         inline operator const VkCommandPool() const { return command_pool; }
 
-        std::vector<CommandBuffer> allocate_command_buffers(const CommandBufferAllocateInfo& allocate_info) const;
+        std::vector<CommandBuffer> allocate_command_buffers(
+            const CommandBufferAllocateInfo& allocate_info) const;
 
     private:
         Deleter<VkCommandPool> command_pool;

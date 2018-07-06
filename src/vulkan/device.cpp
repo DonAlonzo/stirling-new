@@ -48,4 +48,8 @@ namespace stirling { namespace vulkan {
         return {create_info, device};
     }
 
+    Queue Device::get_queue(uint32_t queue_family, uint32_t queue_index) const {
+        return vulkan::get_queue(device, queue_family, queue_index);
+    }
+
 }}

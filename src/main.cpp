@@ -104,13 +104,13 @@ namespace stirling {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME    
             },
             .enabled_features = {
-                .geometryShader  = VK_TRUE
+                .geometryShader = VK_TRUE
             }
         }, physical_device};
 
         // Retrieve queue handles
-        const auto graphics_queue = vulkan::get_queue(device, queue_families.graphics_queue, 0);
-        const auto present_queue = vulkan::get_queue(device, queue_families.present_queue, 0);
+        const auto graphics_queue = device.get_queue(queue_families.graphics_queue, 0);
+        const auto present_queue = device.get_queue(queue_families.present_queue, 0);
         
         // Get supported surface formats
         const auto surface_formats = vulkan::get_surface_formats(physical_device, surface);
@@ -181,7 +181,6 @@ namespace stirling {
 
         // Create command pool
         const auto command_pool = device.create_command_pool({
-            .flags              = 0,
             .queue_family_index = queue_families.graphics_queue
         });
 
@@ -246,7 +245,6 @@ namespace stirling {
         const auto render_pass = vulkan::create_render_pass({{
             .attachments = {
                 {{
-                    .flags            = 0,
                     .format           = surface_format.format,
                     .samples          = VK_SAMPLE_COUNT_1_BIT,
                     .load_op          = VK_ATTACHMENT_LOAD_OP_CLEAR,
