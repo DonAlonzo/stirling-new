@@ -14,8 +14,8 @@ namespace stirling { namespace vulkan {
             return queue;
         }
     
-        void queue_submit(const std::vector<SubmitInfo>& submit_infos, VkFence fence = VK_NULL_HANDLE) const;
-        void queue_present(const PresentInfoKHR& present_info) const;
+        void submit(const std::vector<SubmitInfo>& submit_infos, VkFence fence = VK_NULL_HANDLE) const;
+        void present(const PresentInfoKHR& present_info) const;
         void wait_idle() const;
 
     private:

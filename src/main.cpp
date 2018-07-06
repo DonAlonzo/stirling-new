@@ -503,7 +503,7 @@ namespace stirling {
 
             command_buffer.end();
 
-            graphics_queue.queue_submit({
+            graphics_queue.submit({
                 {{
                     .command_buffers = {
                         command_buffer
@@ -594,7 +594,7 @@ namespace stirling {
 
             command_buffer.end();
 
-            graphics_queue.queue_submit({
+            graphics_queue.submit({
                 {{
                     .command_buffers = {
                         command_buffer
@@ -758,7 +758,7 @@ namespace stirling {
             }
 
             // Submit command buffer to graphics queue
-            graphics_queue.queue_submit({
+            graphics_queue.submit({
                 {{
                     .wait_semaphores = {
                         image_available_semaphores[current_frame]
@@ -774,7 +774,7 @@ namespace stirling {
             }, in_flight_fences[current_frame]);
 
             // Present images
-            present_queue.queue_present({{
+            present_queue.present({{
                 .wait_semaphores = {
                     render_finished_semaphores[current_frame]
                 },

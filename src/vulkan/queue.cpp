@@ -6,12 +6,12 @@ namespace stirling { namespace vulkan {
         queue (queue) {
     }
 
-    void Queue::queue_submit(const std::vector<SubmitInfo>& submit_infos, VkFence fence) const {
-        vulkan::queue_submit(submit_infos, queue, fence);
+    void Queue::submit(const std::vector<SubmitInfo>& submit_infos, VkFence fence) const {
+        queue_submit(submit_infos, queue, fence);
     }
 
-    void Queue::queue_present(const PresentInfoKHR& present_info) const {
-        vulkan::queue_present(present_info, queue);
+    void Queue::present(const PresentInfoKHR& present_info) const {
+        queue_present(present_info, queue);
     }
 
     void Queue::wait_idle() const {
