@@ -52,4 +52,8 @@ namespace stirling { namespace vulkan {
         return vulkan::get_queue(device, queue_family, queue_index);
     }
 
+    void Device::wait_idle() const {
+        vkDeviceWaitIdle(device);
+    }
+
 }}

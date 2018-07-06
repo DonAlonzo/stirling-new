@@ -31,6 +31,8 @@ namespace stirling { namespace vulkan {
         CommandPool create_command_pool(const CommandPoolCreateInfo& create_info) const;
         Queue get_queue(uint32_t queue_family, uint32_t queue_index) const;
 
+        void wait_idle() const;
+
     private:
         Deleter<VkDevice> device;
     };

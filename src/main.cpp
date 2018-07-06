@@ -794,7 +794,7 @@ namespace stirling {
         }
 
         // Wait until device is idle
-        vkDeviceWaitIdle(device);
+        device.wait_idle();
     }
 
 }
