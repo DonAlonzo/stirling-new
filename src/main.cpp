@@ -485,23 +485,22 @@ namespace stirling {
                 .command_buffer_count = 1
             })[0];
 
-            command_buffer.begin({{
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-            }});
-
-            command_buffer.copy_buffer(
-                staging_buffer,
-                vertex_buffer,
-                {
+            command_buffer
+                .begin({{
+                    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+                }})
+                .copy_buffer(
+                    staging_buffer,
+                    vertex_buffer,
                     {
-                        .srcOffset = 0,
-                        .dstOffset = 0,
-                        .size = vertex_buffer_size
+                        {
+                            .srcOffset = 0,
+                            .dstOffset = 0,
+                            .size = vertex_buffer_size
+                        }
                     }
-                }
-            );
-
-            command_buffer.end();
+                )
+                .end();
 
             graphics_queue.submit({
                 {{
@@ -573,23 +572,22 @@ namespace stirling {
                 .command_buffer_count = 1
             })[0];
 
-            command_buffer.begin({{
-                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-            }});
-
-            command_buffer.copy_buffer(
-                staging_buffer,
-                index_buffer,
-                {
+            command_buffer
+                .begin({{
+                    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+                }})
+                .copy_buffer(
+                    staging_buffer,
+                    index_buffer,
                     {
-                        .srcOffset = 0,
-                        .dstOffset = 0,
-                        .size = index_buffer_size
+                        {
+                            .srcOffset = 0,
+                            .dstOffset = 0,
+                            .size = index_buffer_size
+                        }
                     }
-                }
-            );
-
-            command_buffer.end();
+                )
+                .end();
 
             graphics_queue.submit({
                 {{
@@ -673,44 +671,28 @@ namespace stirling {
 
         // Record command buffers
         for (size_t i = 0; i < command_buffers.size(); ++i) {
-            // Begin command buffer
-            command_buffers[i].begin({{
-                .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
-            }});
-
-            // Begin render pass
-            command_buffers[i].begin_render_pass({{
-                .render_pass  = render_pass,
-                .framebuffer  = swapchain_framebuffers[i],
-                .render_area  = {
-                    .offset = { 0, 0 },
-                    .extent = surface_extent
-                },
-                .clear_values = {
-                    { 0.0f, 0.0f, 0.0f, 1.0f }
-                }
-            }}, VK_SUBPASS_CONTENTS_INLINE);
-
-            // Bind pipeline
-            command_buffers[i].bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-            // Bind vertex buffers
-            command_buffers[i].bind_vertex_buffers(0, { vertex_buffer }, { 0 });
-
-            // Bind index buffer
-            command_buffers[i].bind_index_buffer(index_buffer, 0, VK_INDEX_TYPE_UINT16);
-
-            // Bind descriptor sets
-            command_buffers[i].bind_descriptor_sets(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, { descriptor_sets[i] }, {});
-
-            // Draw
-            command_buffers[i].draw_indexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
-            // End render pass
-            command_buffers[i].end_render_pass();
-
-            // End command buffer
-            command_buffers[i].end();
+            command_buffers[i]
+                .begin({{
+                    .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+                }})
+                .begin_render_pass({{
+                    .render_pass  = render_pass,
+                    .framebuffer  = swapchain_framebuffers[i],
+                    .render_area  = {
+                        .offset = { 0, 0 },
+                        .extent = surface_extent
+                    },
+                    .clear_values = {
+                        { 0.0f, 0.0f, 0.0f, 1.0f }
+                    }
+                }}, VK_SUBPASS_CONTENTS_INLINE)
+                .bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline)
+                .bind_vertex_buffers(0, { vertex_buffer }, { 0 })
+                .bind_index_buffer(index_buffer, 0, VK_INDEX_TYPE_UINT16)
+                .bind_descriptor_sets(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, { descriptor_sets[i] }, {})
+                .draw_indexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0)
+                .end_render_pass()
+                .end();
         }
 
         // Create semaphores
