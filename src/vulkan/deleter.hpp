@@ -106,7 +106,7 @@ private:
 
     void check_delete() {
         if (handle != VK_NULL_HANDLE && deleter && reference_counter.use_count() == 1) {
-            std::cout << typeid(Handle).name() << " destroyed\n";
+            // std::cout << typeid(Handle).name() << " destroyed\n";
             deleter();
             deleter = nullptr;
             handle = VK_NULL_HANDLE;

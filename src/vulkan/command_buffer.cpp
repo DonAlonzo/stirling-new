@@ -8,11 +8,23 @@ namespace stirling { namespace vulkan {
     } 
 
     void CommandBuffer::begin(const CommandBufferBeginInfo& begin_info) const {
-        vulkan::begin_command_buffer(begin_info, command_buffer);
+        vulkan::begin_command_buffer(begin_info,
+            command_buffer);
     }
 
     void CommandBuffer::end() const {
         vulkan::end_command_buffer(command_buffer);
+    }
+
+    void CommandBuffer::begin_render_pass(
+        const RenderPassBeginInfo& begin_info,
+        VkSubpassContents          contents) const {
+        
+        vulkan::begin_render_pass(begin_info, command_buffer, contents);
+    }
+
+    void CommandBuffer::end_render_pass() const {
+        vkCmdEndRenderPass(command_buffer);
     }
 
     void CommandBuffer::copy_buffer(
@@ -23,4 +35,61 @@ namespace stirling { namespace vulkan {
         vulkan::cmd_copy_buffer(command_buffer, src_buffer, dst_buffer, regions);
     }
 
+    void CommandBuffer::draw_indexed(
+        uint32_t index_count,
+        uint32_t instance_count,
+        uint32_t first_index,
+        int32_t  vertex_offset,
+        uint32_t first_instance) const {
+
+        vkCmdDrawIndexed(
+            command_buffer,
+            index_count,
+            instance_count,
+            first_index,
+            vertex_offset,
+            first_instance
+        );
+    }
+
+    void CommandBuffer::bind_pipeline(
+        VkPipelineBindPoint pipeline_bind_point,
+        VkPipeline          pipeline) const {
+
+        vkCmdBindPipeline(command_buffer, pipeline_bind_point, pipeline);
+    }
+
+    void CommandBuffer::bind_vertex_buffers(
+        uint32_t                         first_binding,
+        const std::vector<VkBuffer>&     buffers,
+        const std::vector<VkDeviceSize>& offsets) const {
+
+        vulkan::cmd_bind_vertex_buffers(command_buffer, first_binding, buffers, offsets);
+    }
+
+    void CommandBuffer::bind_index_buffer(
+        VkBuffer     buffer,
+        VkDeviceSize offset,
+        VkIndexType  index_type) const {
+
+        vulkan::cmd_bind_index_buffer(command_buffer, buffer, offset, index_type);
+    }
+
+    void CommandBuffer::bind_descriptor_sets(
+        VkPipelineBindPoint          pipeline_bind_point,
+        VkPipelineLayout             layout,
+        uint32_t                     first_set,
+        std::vector<VkDescriptorSet> descriptor_sets,
+        std::vector<uint32_t>        dynamic_offsets) const {
+
+        vulkan::cmd_bind_descriptor_sets(
+            command_buffer,
+            pipeline_bind_point,
+            layout,
+            first_set,
+            descriptor_sets,
+            dynamic_offsets
+        );
+    }
+    
 }}

@@ -679,7 +679,7 @@ namespace stirling {
             }});
 
             // Begin render pass
-            vulkan::begin_render_pass({{
+            command_buffers[i].begin_render_pass({{
                 .render_pass  = render_pass,
                 .framebuffer  = swapchain_framebuffers[i],
                 .render_area  = {
@@ -689,25 +689,25 @@ namespace stirling {
                 .clear_values = {
                     { 0.0f, 0.0f, 0.0f, 1.0f }
                 }
-            }}, command_buffers[i], VK_SUBPASS_CONTENTS_INLINE);
+            }}, VK_SUBPASS_CONTENTS_INLINE);
 
             // Bind pipeline
-            vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            command_buffers[i].bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
             // Bind vertex buffers
-            vulkan::cmd_bind_vertex_buffers(command_buffers[i], 0, { vertex_buffer }, { 0 });
+            command_buffers[i].bind_vertex_buffers(0, { vertex_buffer }, { 0 });
 
             // Bind index buffer
-            vulkan::cmd_bind_index_buffer(command_buffers[i], index_buffer, 0, VK_INDEX_TYPE_UINT16);
+            command_buffers[i].bind_index_buffer(index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
             // Bind descriptor sets
-            vulkan::cmd_bind_descriptor_sets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, { descriptor_sets[i] }, {});
+            command_buffers[i].bind_descriptor_sets(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, { descriptor_sets[i] }, {});
 
             // Draw
-            vkCmdDrawIndexed(command_buffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+            command_buffers[i].draw_indexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
             // End render pass
-            vkCmdEndRenderPass(command_buffers[i]);
+            command_buffers[i].end_render_pass();
 
             // End command buffer
             command_buffers[i].end();
