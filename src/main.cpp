@@ -702,9 +702,7 @@ namespace stirling {
 
         // Loop
         size_t current_frame = 0;
-        while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-
+        while (!window.should_close()) {
             /// Wait for frame to be finished and reset fence
             in_flight_fences[current_frame].wait();
             in_flight_fences[current_frame].reset();

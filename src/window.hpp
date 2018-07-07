@@ -4,19 +4,24 @@
 
 #include <vector>
 
-struct Window {
-    Window(uint32_t width, uint32_t height, const char* title);
-    ~Window();
+namespace stirling {
 
-    Window(const Window&) = delete;
-    Window(Window&&);
-    Window& operator=(const Window&) = delete;
-    Window& operator=(Window&&);
+    struct Window {
+        Window(uint32_t width, uint32_t height, const char* title);
+        ~Window();
 
-    operator GLFWwindow*() const;
+        Window(const Window&) = delete;
+        Window(Window&&);
+        Window& operator=(const Window&) = delete;
+        Window& operator=(Window&&);
 
-    std::vector<const char*> get_required_instance_extensions() const;
+        operator GLFWwindow*() const;
 
-private:
-    GLFWwindow* window;
+        std::vector<const char*> get_required_instance_extensions() const;
+        bool should_close() const;
+
+    private:
+        GLFWwindow* window;
+    };
+
 };
