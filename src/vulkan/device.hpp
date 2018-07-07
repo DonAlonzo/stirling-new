@@ -5,6 +5,7 @@
 #include "deleter.hpp"
 #include "descriptor_pool.hpp"
 #include "device_memory.hpp"
+#include "fence.hpp"
 #include "pipeline.hpp"
 #include "swapchain.hpp"
 #include "vulkan_structs.hpp"
@@ -44,6 +45,14 @@ namespace stirling { namespace vulkan {
         std::vector<SubpassDependency>     dependencies;
     };
 
+    struct FramebufferCreateInfo {
+        VkRenderPass             render_pass;
+        std::vector<VkImageView> attachments;
+        uint32_t                 width;
+        uint32_t                 height;
+        uint32_t                 layers;
+    };
+
     struct Device {
         Device(
             const DeviceCreateInfo& create_info,
@@ -62,15 +71,19 @@ namespace stirling { namespace vulkan {
         Swapchain create_swapchain(const SwapchainCreateInfo& create_info) const;
         Deleter<VkDescriptorSetLayout> create_descriptor_set_layout(
             const DescriptorSetLayoutCreateInfo& create_info) const;
-        Deleter<VkPipelineLayout> create_pipeline_layout(
-            const PipelineLayoutCreateInfo& create_info) const;
-        Deleter<VkImageView> create_image_view(
-            const ImageViewCreateInfo& create_info) const;
-        Deleter<VkRenderPass> create_render_pass(
-            const RenderPassCreateInfo& create_info) const;
+        Deleter<VkPipelineLayout> create_pipeline_layout(const PipelineLayoutCreateInfo& create_info) const;
+        Deleter<VkImageView> create_image_view(const ImageViewCreateInfo& create_info) const;
+        Deleter<VkRenderPass> create_render_pass(const RenderPassCreateInfo& create_info) const;
         Pipeline create_pipeline(
             const GraphicsPipelineCreateInfo& create_info,
             VkPipelineCache                   pipeline_cache) const;
+        Deleter<VkShaderModule> create_shader_module(const VkShaderModuleCreateInfo& create_info) const;
+        Deleter<VkShaderModule> create_shader_module(const char* file_name) const;
+        Deleter<VkFramebuffer> create_framebuffer(const FramebufferCreateInfo& create_info) const;
+        Deleter<VkSemaphore> create_semaphore() const;
+        std::vector<Deleter<VkSemaphore>> create_semaphores(size_t count) const;
+        Fence create_fence(bool signaled = false) const;
+        std::vector<Fence> create_fences(size_t count, bool signaled = false) const;
 
         void wait_idle() const;
 

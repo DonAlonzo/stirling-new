@@ -30,6 +30,10 @@ namespace stirling { namespace vulkan {
         inline operator const VkSwapchainKHR() const { return swapchain; }
 
         std::vector<VkImage> get_images() const;
+        uint32_t acquire_next_image(
+            VkSemaphore semaphore = VK_NULL_HANDLE,
+            VkFence     fence = VK_NULL_HANDLE,
+            uint64_t    timeout = std::numeric_limits<uint64_t>::max()) const;
 
     private:
         Deleter<VkSwapchainKHR> swapchain;

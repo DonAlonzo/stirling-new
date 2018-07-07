@@ -289,19 +289,19 @@ namespace stirling {
                 // Vertex shader stage
                 {
                     .stage  = VK_SHADER_STAGE_VERTEX_BIT,
-                    .module = vulkan::create_shader_module("vert.spv", device),
+                    .module = device.create_shader_module("vert.spv"),
                     .name   = "main",
                 },
                 // Geometry shader stage
                 {
                     .stage  = VK_SHADER_STAGE_GEOMETRY_BIT,
-                    .module = vulkan::create_shader_module("geom.spv", device),
+                    .module = device.create_shader_module("geom.spv"),
                     .name   = "main",
                 },
                 // Fragment shader stage
                 {
                     .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-                    .module = vulkan::create_shader_module("frag.spv", device),
+                    .module = device.create_shader_module("frag.spv"),
                     .name   = "main",
                 }
             },
@@ -402,7 +402,7 @@ namespace stirling {
         // Create framebuffers
         std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
         for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
-            swapchain_framebuffers[i] = vulkan::create_framebuffer({{
+            swapchain_framebuffers[i] = device.create_framebuffer({
                 .render_pass = render_pass,
                 .attachments = {{
                     swapchain_image_views[i]
@@ -410,7 +410,7 @@ namespace stirling {
                 .width  = surface_extent.width,
                 .height = surface_extent.height,
                 .layers = 1
-            }}, device);
+            });
         }
 
         // Create vertices
@@ -696,9 +696,9 @@ namespace stirling {
 
         // Create semaphores
         constexpr auto max_frames_in_flight = 2;
-        const auto image_available_semaphores = vulkan::create_semaphores(device, max_frames_in_flight);
-        const auto render_finished_semaphores = vulkan::create_semaphores(device, max_frames_in_flight);
-        const auto in_flight_fences = vulkan::create_fences(device, max_frames_in_flight, true);
+        const auto image_available_semaphores = device.create_semaphores(max_frames_in_flight);
+        const auto render_finished_semaphores = device.create_semaphores(max_frames_in_flight);
+        const auto in_flight_fences = device.create_fences(max_frames_in_flight, true);
 
         // Loop
         size_t current_frame = 0;
@@ -706,11 +706,11 @@ namespace stirling {
             glfwPollEvents();
 
             /// Wait for frame to be finished and reset fence
-            vulkan::wait_for_fence(device, in_flight_fences[current_frame]);
-            vulkan::reset_fence(device, in_flight_fences[current_frame]);
+            in_flight_fences[current_frame].wait();
+            in_flight_fences[current_frame].reset();
 
             // Get next image from swapchain
-            const auto image_index = vulkan::acquire_next_image(device, swapchain, image_available_semaphores[current_frame]);
+            const auto image_index = swapchain.acquire_next_image(image_available_semaphores[current_frame]);
             
             // Update uniform buffer
             {

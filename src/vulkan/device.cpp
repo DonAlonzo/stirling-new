@@ -1,4 +1,5 @@
 #include "device.hpp"
+#include "file.hpp"
 #include "vulkan.hpp"
 
 namespace stirling { namespace vulkan {
@@ -171,6 +172,101 @@ namespace stirling { namespace vulkan {
         VkPipelineCache                   pipeline_cache) const {
 
         return {create_info, pipeline_cache, device};
+    }
+
+    Deleter<VkShaderModule> Device::create_shader_module(
+        const VkShaderModuleCreateInfo& create_info) const {
+
+        return create<VkShaderModule>(
+            vkCreateShaderModule,
+            vkDestroyShaderModule,
+            device,
+            "Failed to create shader module.",
+            &create_info
+        );
+    }
+
+    Deleter<VkShaderModule> Device::create_shader_module(
+        const char* file_name) const {
+
+        const auto code = read_file(file_name);
+        return create_shader_module({
+            .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = code.size(),
+            .pCode    = reinterpret_cast<const uint32_t*>(code.data())
+        });
+    }
+
+    Deleter<VkFramebuffer> Device::create_framebuffer(
+        const FramebufferCreateInfo& create_info) const {
+
+        const VkFramebufferCreateInfo vk_create_info {
+            .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass      = create_info.render_pass,
+            .attachmentCount = static_cast<uint32_t>(create_info.attachments.size()),
+            .pAttachments    = create_info.attachments.data(),
+            .width           = create_info.width,
+            .height          = create_info.height,
+            .layers          = create_info.layers
+        };
+
+        return create<VkFramebuffer>(
+            vkCreateFramebuffer,
+            vkDestroyFramebuffer,
+            device,
+            "Failed to create framebuffer.",
+            &vk_create_info
+        );
+    }
+
+    Deleter<VkSemaphore> Device::create_semaphore() const {
+        const VkSemaphoreCreateInfo create_info = {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+
+        return create<VkSemaphore>(
+            vkCreateSemaphore,
+            vkDestroySemaphore,
+            device,
+            "Failed to create semaphore.",
+            &create_info
+        );
+    }
+
+    std::vector<Deleter<VkSemaphore>> Device::create_semaphores(size_t count) const {
+        std::vector<Deleter<VkSemaphore>> semaphores;
+        semaphores.reserve(count);
+        for (size_t i = 0; i < count; ++i) {
+            semaphores.emplace_back(create_semaphore());
+        }
+        return semaphores;
+    }
+
+    Fence Device::create_fence(bool signaled) const {
+        const VkFenceCreateInfo create_info = {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0u
+        };
+
+        return {
+            create<VkFence>(
+                vkCreateFence,
+                vkDestroyFence,
+                device,
+                "Failed to create fence.",
+                &create_info
+            ),
+            device
+        };
+    }
+
+    std::vector<Fence> Device::create_fences(size_t count, bool signaled) const {
+        std::vector<Fence> fences;
+        fences.reserve(count);
+        for (size_t i = 0; i < count; ++i) {
+            fences.emplace_back(create_fence(signaled));
+        }
+        return fences;
     }
 
     Queue Device::get_queue(uint32_t queue_family, uint32_t queue_index) const {

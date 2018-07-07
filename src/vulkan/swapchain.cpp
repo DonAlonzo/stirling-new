@@ -12,4 +12,12 @@ namespace stirling { namespace vulkan {
         return vulkan::get_swapchain_images(device, swapchain);
     }
 
+    uint32_t Swapchain::acquire_next_image(
+        VkSemaphore semaphore,
+        VkFence     fence,
+        uint64_t    timeout) const {
+
+        return vulkan::acquire_next_image(device, swapchain, semaphore, fence, timeout);
+    }
+
 }}

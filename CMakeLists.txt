@@ -29,6 +29,7 @@ target_sources(${PROJECT_NAME}
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/descriptor_set.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/device_memory.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/fence.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/instance.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/physical_device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/pipeline.cpp

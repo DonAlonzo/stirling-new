@@ -1,6 +1,5 @@
 #pragma once
 
-#include "buffer.hpp"
 #include "deleter.hpp"
 #include "vulkan_structs.hpp"
 

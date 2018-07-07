@@ -154,27 +154,6 @@ namespace stirling { namespace vulkan {
     };
     typedef Wrapper<SubpassDependencyData, VkSubpassDependency> SubpassDependency;
 
-    struct FramebufferCreateInfoData {
-        VkRenderPass             render_pass;
-        std::vector<VkImageView> attachments;
-        uint32_t                 width;
-        uint32_t                 height;
-        uint32_t                 layers;
-
-        inline operator const VkFramebufferCreateInfo() const {
-            return {
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .renderPass      = render_pass,
-                .attachmentCount = static_cast<uint32_t>(attachments.size()),
-                .pAttachments    = attachments.data(),
-                .width           = width,
-                .height          = height,
-                .layers          = layers
-            };
-        }
-    };
-    typedef Wrapper<FramebufferCreateInfoData, VkFramebufferCreateInfo> FramebufferCreateInfo;
-
     struct RenderPassBeginInfoData {
         VkRenderPass              render_pass;
         VkFramebuffer             framebuffer;
