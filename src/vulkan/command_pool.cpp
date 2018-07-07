@@ -38,12 +38,26 @@ namespace stirling { namespace vulkan {
             .commandBufferCount = allocate_info.command_buffer_count
         };
 
-        std::vector<VkCommandBuffer> command_buffers{allocate_info.command_buffer_count};
+        std::vector<VkCommandBuffer> vk_command_buffers{allocate_info.command_buffer_count};
         vulkan_assert(
-            vkAllocateCommandBuffers(device, &vk_allocate_info, command_buffers.data()),
+            vkAllocateCommandBuffers(device, &vk_allocate_info, vk_command_buffers.data()),
             "Failed to allocate command buffers."
         );
-        return {command_buffers.begin(), command_buffers.end()};
+
+        std::vector<CommandBuffer> command_buffers;
+        command_buffers.reserve(allocate_info.command_buffer_count);
+        std::transform(
+            vk_command_buffers.begin(),
+            vk_command_buffers.end(),
+            std::back_inserter(command_buffers),
+            [this](VkCommandBuffer command_buffer) -> Deleter<VkCommandBuffer> {
+                return {
+                    std::bind(vulkan::free_command_buffer, device, command_pool, std::placeholders::_1),
+                    command_buffer
+                };
+            }
+        );
+        return command_buffers;
     }
 
 }}

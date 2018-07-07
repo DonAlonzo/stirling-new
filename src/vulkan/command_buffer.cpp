@@ -3,7 +3,7 @@
 
 namespace stirling { namespace vulkan {
 
-    CommandBuffer::CommandBuffer(VkCommandBuffer command_buffer) :
+    CommandBuffer::CommandBuffer(Deleter<VkCommandBuffer>&& command_buffer) :
         command_buffer (command_buffer) {
     } 
 

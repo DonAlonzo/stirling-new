@@ -4,26 +4,25 @@
 
 #include <functional>
 #include <memory>
-#include <mutex>
-
-struct ReferenceCounter {
-    operator size_t();
-    size_t operator++();
-    size_t operator--();
-private:
-    std::mutex mutex;
-    size_t count = 1;
-};
+#include <iostream>
 
 template<typename Handle>
 struct Deleter {
     Deleter() = default;
 
     Deleter(
+        std::function<void(Handle)> deleter,
+        Handle handle = VK_NULL_HANDLE) :
+        
+        deleter ([=]() { deleter(handle); }), 
+        handle  (handle) {
+    }
+
+    Deleter(
         void (*deleter)(Handle, const VkAllocationCallbacks*),
         Handle handle = VK_NULL_HANDLE) :
         
-        deleter ([=]() { deleter(this->handle, nullptr); }), 
+        deleter ([=]() { deleter(handle, nullptr); }), 
         handle  (handle) {
     }
 
@@ -33,7 +32,7 @@ struct Deleter {
         Parent parent,
         Handle handle = VK_NULL_HANDLE) :
         
-        deleter ([=]() { deleter(parent, this->handle, nullptr); }),
+        deleter ([=]() { deleter(parent, handle, nullptr); }),
         handle  (handle) {
     }
 
@@ -43,7 +42,7 @@ struct Deleter {
         Deleter<Parent> parent,
         Handle          handle = VK_NULL_HANDLE) :
         
-        deleter ([=]() { deleter(parent, this->handle, nullptr); }),
+        deleter ([=]() { deleter(parent, handle, nullptr); }),
         handle  (handle) {
     }
 
@@ -51,8 +50,6 @@ struct Deleter {
         handle            (rhs.handle),
         reference_counter (rhs.reference_counter),
         deleter           (rhs.deleter) {
-
-        ++(*reference_counter);
     }
 
     Deleter& operator=(const Deleter& rhs) {
@@ -61,8 +58,6 @@ struct Deleter {
         handle = rhs.handle;
         reference_counter = rhs.reference_counter;
         deleter = rhs.deleter;
-
-        ++(*reference_counter);
 
         return *this;
     }
@@ -93,7 +88,7 @@ struct Deleter {
 
     void replace(Handle handle) {
         check_delete();
-        this->handle = handle;
+        handle = handle;
     }
 
     Handle* replace() {
@@ -106,11 +101,12 @@ struct Deleter {
 
 private:
     Handle handle = VK_NULL_HANDLE;
-    std::shared_ptr<ReferenceCounter> reference_counter = std::make_shared<ReferenceCounter>();
+    std::shared_ptr<void> reference_counter{new uint8_t[0]};
     std::function<void()> deleter;
 
     void check_delete() {
-        if (handle != VK_NULL_HANDLE && deleter && --(*reference_counter) == 0) {
+        if (handle != VK_NULL_HANDLE && deleter && reference_counter.use_count() == 1) {
+            std::cout << typeid(Handle).name() << " destroyed\n";
             deleter();
             deleter = nullptr;
             handle = VK_NULL_HANDLE;

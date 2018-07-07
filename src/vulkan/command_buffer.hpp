@@ -12,7 +12,7 @@
 namespace stirling { namespace vulkan {
 
     struct CommandBuffer {
-        CommandBuffer(VkCommandBuffer command_buffer);
+        CommandBuffer(Deleter<VkCommandBuffer>&& command_buffer);
 
         inline operator const VkCommandBuffer() const { return command_buffer; }
 
@@ -25,7 +25,7 @@ namespace stirling { namespace vulkan {
             const std::vector<VkBufferCopy>& regions) const;
 
     private:
-        VkCommandBuffer command_buffer;
+        Deleter<VkCommandBuffer> command_buffer;
     };
 
 }}

@@ -7,11 +7,20 @@
 #include <glm/glm.hpp>
 
 #include <cassert>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <vector>
 
 namespace stirling { namespace vulkan {
+
+    inline void free_command_buffer(
+        VkDevice        device,
+        VkCommandPool   command_pool,
+        VkCommandBuffer command_buffer) {
+        
+        vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+    }
 
     inline std::vector<VkDescriptorSet> allocate_descriptor_sets(
         const DescriptorSetAllocateInfo& allocate_info,
