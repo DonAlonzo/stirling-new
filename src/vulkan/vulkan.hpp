@@ -22,18 +22,14 @@ namespace stirling { namespace vulkan {
         vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
     }
 
-    inline std::vector<VkDescriptorSet> allocate_descriptor_sets(
-        const DescriptorSetAllocateInfo& allocate_info,
-        VkDevice                         device) {
+    inline void free_descriptor_set(
+        VkDevice         device,
+        VkDescriptorPool descriptor_pool,
+        VkDescriptorSet  descriptor_set) {
 
-        std::vector<VkDescriptorSet> descriptor_sets{allocate_info.data().descriptorSetCount};
-        vulkan_assert(
-            vkAllocateDescriptorSets(device, allocate_info, descriptor_sets.data()),
-            "Failed to alocate descriptor sets."
-        );
-        return descriptor_sets;
+        vkFreeDescriptorSets(device, descriptor_pool, 1, &descriptor_set);
     }
-    
+
     inline void update_descriptor_sets(
         VkDevice                               device,
         const std::vector<WriteDescriptorSet>& descriptor_writes,

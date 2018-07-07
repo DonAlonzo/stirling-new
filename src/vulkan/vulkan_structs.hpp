@@ -253,21 +253,6 @@ namespace stirling { namespace vulkan {
     };
     typedef Wrapper<FramebufferCreateInfoData, VkFramebufferCreateInfo> FramebufferCreateInfo;
 
-    struct DescriptorSetAllocateInfoData {
-        VkDescriptorPool                   descriptor_pool;
-        std::vector<VkDescriptorSetLayout> set_layouts;
-
-        inline operator const VkDescriptorSetAllocateInfo() const {
-            return {
-                .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .descriptorPool     = descriptor_pool,
-                .descriptorSetCount = static_cast<uint32_t>(set_layouts.size()),
-                .pSetLayouts        = set_layouts.data()
-            };
-        }
-    };
-    typedef Wrapper<DescriptorSetAllocateInfoData, VkDescriptorSetAllocateInfo> DescriptorSetAllocateInfo;
-
     struct RenderPassBeginInfoData {
         VkRenderPass              render_pass;
         VkFramebuffer             framebuffer;
@@ -638,23 +623,6 @@ namespace stirling { namespace vulkan {
         }
     };
     typedef Wrapper<GraphicsPipelineCreateInfoData, VkGraphicsPipelineCreateInfo> GraphicsPipelineCreateInfo;
-
-    struct DescriptorPoolCreateInfoData {
-        VkDescriptorPoolCreateFlags       flags;
-        uint32_t                          max_sets;
-        std::vector<VkDescriptorPoolSize> pool_sizes;
-
-        inline operator const VkDescriptorPoolCreateInfo() const {
-            return {
-                .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .flags         = flags,
-                .maxSets       = max_sets,
-                .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
-                .pPoolSizes    = pool_sizes.data()
-            };
-        }
-    };
-    typedef Wrapper<DescriptorPoolCreateInfoData, VkDescriptorPoolCreateInfo> DescriptorPoolCreateInfo;
 
     struct WriteDescriptorSetData {
         VkDescriptorSet        dst_set;

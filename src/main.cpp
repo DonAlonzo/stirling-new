@@ -629,7 +629,7 @@ namespace stirling {
         }
 
         // Create descriptor pool
-        const auto descriptor_pool = vulkan::create_descriptor_pool({{
+        const auto descriptor_pool = device.create_descriptor_pool({
             .pool_sizes = {
                 {
                     .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -637,13 +637,12 @@ namespace stirling {
                 }
             },
             .max_sets = static_cast<uint32_t>(swapchain_image_views.size())
-        }}, device);
+        });
 
         // Allocate descriptor sets
-        const auto descriptor_sets = vulkan::allocate_descriptor_sets({{
-            .descriptor_pool = descriptor_pool,
-            .set_layouts     = {swapchain_image_views.size(), descriptor_set_layout}
-        }}, device);
+        const auto descriptor_sets = descriptor_pool.allocate_descriptor_sets({
+            .set_layouts = {swapchain_image_views.size(), descriptor_set_layout}
+        });
 
         // Update descriptor sets
         for (size_t i = 0; i < swapchain_image_views.size(); ++i) {

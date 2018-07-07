@@ -1,9 +1,9 @@
 #pragma once
 
 #include "buffer.hpp"
-#include "command_buffer.hpp"
 #include "command_pool.hpp"
 #include "deleter.hpp"
+#include "descriptor_pool.hpp"
 #include "device_memory.hpp"
 #include "vulkan_structs.hpp"
 #include "queue.hpp"
@@ -29,6 +29,7 @@ namespace stirling { namespace vulkan {
         DeviceMemory allocate_memory(const MemoryAllocateInfo& allocate_info) const;
         Buffer create_buffer(const BufferCreateInfo& create_info) const;
         CommandPool create_command_pool(const CommandPoolCreateInfo& create_info) const;
+        DescriptorPool create_descriptor_pool(const DescriptorPoolCreateInfo& create_info) const;
         Queue get_queue(uint32_t queue_family, uint32_t queue_index) const;
 
         void wait_idle() const;

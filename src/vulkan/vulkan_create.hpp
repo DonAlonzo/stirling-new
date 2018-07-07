@@ -277,17 +277,4 @@ namespace stirling { namespace vulkan {
         return fences;
     }
 
-    inline Deleter<VkDescriptorPool> create_descriptor_pool(
-        const DescriptorPoolCreateInfo& create_info,
-        VkDevice                        device) {
-
-        return create<VkDescriptorPool>(
-            vkCreateDescriptorPool,
-            vkDestroyDescriptorPool,
-            device,
-            "Failed to create descriptor pool.",
-            create_info
-        );
-    }
-
 }}

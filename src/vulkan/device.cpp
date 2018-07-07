@@ -47,6 +47,10 @@ namespace stirling { namespace vulkan {
     CommandPool Device::create_command_pool(const CommandPoolCreateInfo& create_info) const {
         return {create_info, device};
     }
+    
+    DescriptorPool Device::create_descriptor_pool(const DescriptorPoolCreateInfo& create_info) const {
+        return {create_info, device};
+    }
 
     Queue Device::get_queue(uint32_t queue_family, uint32_t queue_index) const {
         return vulkan::get_queue(device, queue_family, queue_index);
