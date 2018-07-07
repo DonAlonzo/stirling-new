@@ -65,32 +65,6 @@ namespace stirling { namespace vulkan {
         );
     }
 
-    inline Deleter<VkSwapchainKHR> create_swapchain(
-        const SwapchainCreateInfoKHR& create_info,
-        VkDevice                      device) {
-
-        return create<VkSwapchainKHR>(
-            vkCreateSwapchainKHR,
-            vkDestroySwapchainKHR,
-            device,
-            "Failed to create swapchain.",
-            create_info
-        );
-    }
-
-    inline Deleter<VkImageView> create_image_view(
-        const ImageViewCreateInfo& create_info,
-        VkDevice                   device) {
-
-        return create<VkImageView>(
-            vkCreateImageView,
-            vkDestroyImageView,
-            device,
-            "Failed to create image view.",
-            create_info
-        );
-    }
-
     inline Deleter<VkShaderModule> create_shader_module(
         const VkShaderModuleCreateInfo& create_info,
         VkDevice                        device) {
@@ -114,87 +88,6 @@ namespace stirling { namespace vulkan {
             .codeSize = code.size(),
             .pCode    = reinterpret_cast<const uint32_t*>(code.data())
         }, device);
-    }
-
-    inline Deleter<VkRenderPass> create_render_pass(
-        const RenderPassCreateInfo& create_info,
-        VkDevice                    device) {
-
-        return create<VkRenderPass>(
-            vkCreateRenderPass,
-            vkDestroyRenderPass,
-            device,
-            "Failed to create render pass.",
-            create_info
-        );
-    }
-
-    inline Deleter<VkDescriptorSetLayout> create_descriptor_set_layout(
-        const DescriptorSetLayoutCreateInfo& create_info,
-        VkDevice                             device) {
-
-        return create<VkDescriptorSetLayout>(
-            vkCreateDescriptorSetLayout,
-            vkDestroyDescriptorSetLayout,
-            device,
-            "Failed to create descriptor set layout.",
-            create_info
-        );
-    }
-
-    inline Deleter<VkPipelineLayout> create_pipeline_layout(
-        const PipelineLayoutCreateInfo& create_info,
-        VkDevice                        device) {
-
-        return create<VkPipelineLayout>(
-            vkCreatePipelineLayout,
-            vkDestroyPipelineLayout,
-            device,
-            "Failed to create pipeline layout.",
-            create_info
-        );
-    }
-
-    inline std::vector<Deleter<VkPipeline>> create_pipelines(
-        const std::vector<GraphicsPipelineCreateInfo>& create_infos,
-        VkPipelineCache                                pipeline_cache,
-        VkDevice                                       device) {
-
-        VkPipeline* pipeline_pointer;
-        vulkan_assert(
-            vkCreateGraphicsPipelines(
-                device,
-                pipeline_cache,
-                create_infos.size(),
-                cast_vector<const VkGraphicsPipelineCreateInfo*>(create_infos),
-                nullptr,
-                pipeline_pointer
-            ),
-            "Failed to create pipelines."
-        );
-
-        std::vector<Deleter<VkPipeline>> pipelines{create_infos.size()};
-        for (size_t i = 0; i < create_infos.size(); ++i) {
-            pipelines[i].replace(*(pipeline_pointer + i));
-        }
-
-        return pipelines;
-    }
-
-    inline Deleter<VkPipeline> create_pipeline(
-        const GraphicsPipelineCreateInfo& create_info,
-        VkPipelineCache                   pipeline_cache,
-        VkDevice                          device) {
-
-        return create<VkPipeline>(
-            vkCreateGraphicsPipelines,
-            vkDestroyPipeline,
-            device,
-            "Failed to create pipeline.",
-            pipeline_cache,
-            1,
-            create_info
-        );
     }
 
     inline Deleter<VkFramebuffer> create_framebuffer(

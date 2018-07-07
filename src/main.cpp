@@ -161,7 +161,7 @@ namespace stirling {
         const auto surface_extent = vulkan::get_surface_extent(surface_capabilities, width, height);
 
         // Create descriptor set layout
-        const auto descriptor_set_layout = vulkan::create_descriptor_set_layout({{
+        const auto descriptor_set_layout = device.create_descriptor_set_layout({
             .bindings = {
                 {{
                     .binding         = 0,
@@ -170,14 +170,14 @@ namespace stirling {
                     .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT
                 }}
             }
-        }}, device);
+        });
 
         // Create pipeline layout
-        const auto pipeline_layout = vulkan::create_pipeline_layout({{
+        const auto pipeline_layout = device.create_pipeline_layout({
             .set_layouts = {
                 descriptor_set_layout
             }
-        }}, device);
+        });
 
         // Create command pool
         const auto command_pool = device.create_command_pool({
@@ -186,7 +186,7 @@ namespace stirling {
 
         // Create swapchain
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
-        const auto swapchain = vulkan::create_swapchain({{
+        const auto swapchain = device.create_swapchain({
             .surface              = surface,
             .min_image_count      = swap_image_count,
             .image_format         = surface_format.format,
@@ -210,16 +210,16 @@ namespace stirling {
             .present_mode         = present_mode,
             .clipped              = VK_TRUE,
             .old_swapchain        = VK_NULL_HANDLE
-        }}, device);
+        });
 
         // Create swapchain image views
         const auto swapchain_image_views = [&]() {
             // Get swapchain images
-            const auto swapchain_images = vulkan::get_swapchain_images(device, swapchain);
+            const auto swapchain_images = swapchain.get_images();
             
             std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
             for (size_t i = 0; i < swapchain_images.size(); ++i) {
-                swapchain_image_views[i] = vulkan::create_image_view({{
+                swapchain_image_views[i] = device.create_image_view({
                     .image      = swapchain_images[i],
                     .view_type  = VK_IMAGE_VIEW_TYPE_2D,
                     .format     = surface_format.format,
@@ -236,13 +236,13 @@ namespace stirling {
                         .baseArrayLayer = 0,
                         .layerCount     = 1
                     }
-                }}, device);
+                });
             }
             return swapchain_image_views;
         }();
 
         // Create render pass
-        const auto render_pass = vulkan::create_render_pass({{
+        const auto render_pass = device.create_render_pass({
             .attachments = {
                 {{
                     .format           = surface_format.format,
@@ -281,32 +281,32 @@ namespace stirling {
                     .dst_access_mask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 }}
             }
-        }}, device);
+        });
 
         // Create pipelines
-        const auto pipeline = vulkan::create_pipeline({{
+        const auto pipeline = device.create_pipeline({
             .stages = {
                 // Vertex shader stage
-                {{
+                {
                     .stage  = VK_SHADER_STAGE_VERTEX_BIT,
                     .module = vulkan::create_shader_module("vert.spv", device),
                     .name   = "main",
-                }},
+                },
                 // Geometry shader stage
-                {{
+                {
                     .stage  = VK_SHADER_STAGE_GEOMETRY_BIT,
                     .module = vulkan::create_shader_module("geom.spv", device),
                     .name   = "main",
-                }},
+                },
                 // Fragment shader stage
-                {{
+                {
                     .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
                     .module = vulkan::create_shader_module("frag.spv", device),
                     .name   = "main",
-                }}
+                }
             },
 
-            .vertex_input_state = {{
+            .vertex_input_state = {
                 .vertex_binding_descriptions = {
                     {
                         .binding   = 0,
@@ -328,14 +328,14 @@ namespace stirling {
                         .offset   = offsetof(Vertex, color)
                     }
                 }
-            }},
+            },
 
-            .input_assembly_state = {{
+            .input_assembly_state = {
                 .topology                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
                 .primitive_restart_enable = VK_FALSE
-            }},
+            },
 
-            .viewport_state = {{
+            .viewport_state = {
                 .viewports = {
                     {
                         .x        = 0.0f,
@@ -353,9 +353,9 @@ namespace stirling {
                         .extent = surface_extent
                     }
                 }
-            }},
+            },
 
-            .rasterization_state = {{
+            .rasterization_state = {
                 .depth_clamp_enable         = VK_FALSE,
                 .rasterizer_discard_enable  = VK_FALSE,
                 .polygon_mode               = VK_POLYGON_MODE_FILL,
@@ -366,14 +366,14 @@ namespace stirling {
                 .depth_bias_clamp           = 0.0f,
                 .depth_bias_slope_factor    = 0.0f,
                 .line_width                 = 1.0f
-            }},
+            },
 
-            .multisample_state = {{
+            .multisample_state = {
                 .rasterization_samples = VK_SAMPLE_COUNT_1_BIT,
                 .min_sample_shading    = 1.0f,
-            }},
+            },
 
-            .color_blend_state = {{
+            .color_blend_state = {
                 .logic_op_enable = VK_FALSE,
                 .attachments = {
                     {{
@@ -392,12 +392,12 @@ namespace stirling {
                 },
 
                 .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
-            }},
+            },
 
             .layout = pipeline_layout,
 
             .render_pass = render_pass,
-        }}, VK_NULL_HANDLE, device);
+        }, VK_NULL_HANDLE);
 
         // Create framebuffers
         std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
