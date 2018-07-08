@@ -32,7 +32,13 @@ namespace stirling { namespace vulkan {
         const BufferCreateInfo& create_info,
         VkDevice                device) :
 
-        buffer (create_buffer(create_info, device)) {
+        buffer (create_buffer(create_info, device)),
+        device (device) {
     };
+
+    void Buffer::bind(VkDeviceMemory memory, VkDeviceSize offset) const {
+        vkBindBufferMemory(device, buffer, memory, offset);
+    }
+
 
 }}

@@ -35,6 +35,7 @@ namespace stirling {
         descriptor_set_layout (create_descriptor_set_layout()),
         pipeline_layout       (create_pipeline_layout()),
         command_pool          (create_command_pool()),
+
         swapchain             (create_swapchain()),
         image_views           (create_image_views()),
         render_pass           (create_render_pass()),
@@ -78,7 +79,7 @@ namespace stirling {
         });
 
         // Bind memory to vertex buffer
-        vkBindBufferMemory(device, vertex_buffer, vertex_buffer_memory, 0);
+        vertex_buffer.bind(vertex_buffer_memory, 0);
 
         {
             // Create staging buffer
@@ -102,7 +103,7 @@ namespace stirling {
             });
 
             // Bind memory to staging buffer
-            vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
+            staging_buffer.bind(staging_buffer_memory, 0);
 
             // Copy vertex data to staging buffer
             staging_buffer_memory.map().copy(vertices.data(), vertex_buffer_size);
@@ -165,7 +166,7 @@ namespace stirling {
         });
 
         // Bind memory to index buffer
-        vkBindBufferMemory(device, index_buffer, index_buffer_memory, 0);
+        index_buffer.bind(index_buffer_memory, 0);
 
         {
             // Create staging buffer
@@ -189,7 +190,7 @@ namespace stirling {
             });
 
             // Bind memory to staging buffer
-            vkBindBufferMemory(device, staging_buffer, staging_buffer_memory, 0);
+            staging_buffer.bind(staging_buffer_memory, 0);
 
             // Copy index data to staging buffer
             staging_buffer_memory.map().copy(indices.data(), index_buffer_size);
@@ -253,7 +254,7 @@ namespace stirling {
             }));
 
             // Bind memory to uniform buffer
-            vkBindBufferMemory(device, uniform_buffers[i], uniform_buffer_memories[i], 0);
+            uniform_buffers[i].bind(uniform_buffer_memories[i], 0);
         }
 
         // Create descriptor pool
