@@ -18,6 +18,7 @@ namespace stirling { namespace vulkan {
         VkPhysicalDeviceProperties get_properties() const;
         VkPhysicalDeviceFeatures get_features() const;
         QueueFamilyIndices get_queue_families(const Surface& surface) const;
+        uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const;
 
     private:
         VkPhysicalDevice physical_device;

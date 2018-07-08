@@ -23,4 +23,8 @@ namespace stirling { namespace vulkan {
         return vulkan::get_queue_families(physical_device, surface);
     }
 
+    uint32_t PhysicalDevice::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) const {
+        return vulkan::find_memory_type(physical_device, type_filter, properties);
+    }
+
 }}

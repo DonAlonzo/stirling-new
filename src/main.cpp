@@ -71,8 +71,7 @@ namespace stirling {
         // Allocate memory for vertex buffer
         const auto vertex_buffer_memory = device.allocate_memory({
             .allocation_size   = memory_requirements.size,
-            .memory_type_index = vulkan::find_memory_type(
-                physical_device,
+            .memory_type_index = physical_device.find_memory_type(
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
@@ -95,8 +94,7 @@ namespace stirling {
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
-                .memory_type_index = vulkan::find_memory_type(
-                    physical_device,
+                .memory_type_index = physical_device.find_memory_type(
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
@@ -158,8 +156,7 @@ namespace stirling {
         // Allocate memory for index buffer
         const auto index_buffer_memory = device.allocate_memory({
             .allocation_size   = memory_requirements.size,
-            .memory_type_index = vulkan::find_memory_type(
-                physical_device,
+            .memory_type_index = physical_device.find_memory_type(
                 memory_requirements.memoryTypeBits,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             )
@@ -182,8 +179,7 @@ namespace stirling {
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
-                .memory_type_index = vulkan::find_memory_type(
-                    physical_device,
+                .memory_type_index = physical_device.find_memory_type(
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
@@ -246,8 +242,7 @@ namespace stirling {
             // Allocate memory for uniform buffer
             uniform_buffer_memories.emplace_back(device.allocate_memory({
                 .allocation_size   = memory_requirements.size,
-                .memory_type_index = vulkan::find_memory_type(
-                    physical_device,
+                .memory_type_index = physical_device.find_memory_type(
                     memory_requirements.memoryTypeBits,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 )
