@@ -21,6 +21,8 @@ namespace stirling { namespace vulkan {
     using ImageView = Deleter<VkImageView>;
     using Framebuffer = Deleter<VkFramebuffer>;
     using SurfaceFormat = VkSurfaceFormatKHR;
+    using Extent2D = VkExtent2D;
+    using RenderPass = Deleter<VkRenderPass>;
 
     inline void free_command_buffer(
         VkDevice        device,

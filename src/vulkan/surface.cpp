@@ -23,19 +23,19 @@ namespace stirling { namespace vulkan {
         VkPhysicalDevice physical_device) const {
 
         // Get supported surface format count
-        uint32_t surface_format_count;
+        uint32_t format_count;
         vulkan_assert(
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr),
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr),
             "Failed to get number of surface formats."
         );
 
         // Get supported surface formats
-        std::vector<VkSurfaceFormatKHR> surface_formats{surface_format_count};
+        std::vector<VkSurfaceFormatKHR> formats{format_count};
         vulkan_assert(
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()),
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, formats.data()),
             "Failed to get surface formats."
         );
-        return surface_formats;
+        return formats;
     }
 
     std::vector<VkPresentModeKHR> Surface::get_present_modes(
@@ -61,27 +61,12 @@ namespace stirling { namespace vulkan {
         VkPhysicalDevice physical_device) const {
 
         // Get surface capabilities
-        VkSurfaceCapabilitiesKHR surface_capabilities;
+        VkSurfaceCapabilitiesKHR capabilities;
         vulkan_assert(
-            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities),
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &capabilities),
             "Failed to get surface capabilities."
         );
-        return surface_capabilities;
-    }
-
-    VkExtent2D Surface::get_extent(
-        VkSurfaceCapabilitiesKHR surface_capabilities,
-        uint32_t                 width,
-        uint32_t                 height) const {
-
-        VkExtent2D surface_extent;
-        if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            surface_extent = surface_capabilities.currentExtent;
-        } else {
-            surface_extent.width = std::max(surface_capabilities.minImageExtent.width, std::min(surface_capabilities.maxImageExtent.width, width));
-            surface_extent.height = std::max(surface_capabilities.minImageExtent.height, std::min(surface_capabilities.maxImageExtent.height, height));
-        }
-        return surface_extent;
+        return capabilities;
     }
 
 }}

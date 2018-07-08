@@ -145,7 +145,7 @@ namespace stirling { namespace vulkan {
         );
     }
 
-    Deleter<VkRenderPass> Device::create_render_pass(
+    RenderPass Device::create_render_pass(
         const RenderPassCreateInfo& create_info) const {
 
         const VkRenderPassCreateInfo vk_create_info {

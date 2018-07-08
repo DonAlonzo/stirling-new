@@ -73,7 +73,7 @@ namespace stirling { namespace vulkan {
             const DescriptorSetLayoutCreateInfo& create_info) const;
         Deleter<VkPipelineLayout> create_pipeline_layout(const PipelineLayoutCreateInfo& create_info) const;
         Deleter<VkImageView> create_image_view(const ImageViewCreateInfo& create_info) const;
-        Deleter<VkRenderPass> create_render_pass(const RenderPassCreateInfo& create_info) const;
+        RenderPass create_render_pass(const RenderPassCreateInfo& create_info) const;
         Pipeline create_pipeline(
             const GraphicsPipelineCreateInfo& create_info,
             VkPipelineCache                   pipeline_cache) const;

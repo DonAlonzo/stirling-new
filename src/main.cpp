@@ -24,273 +24,22 @@ namespace stirling {
         window                (width, height, "Stirling Engine"),
         instance              (create_instance()),
         debugger              (create_debugger()),
-        surface               (instance.create_surface(window)),
         physical_device       (pick_physical_device()),
-        queue_families        (physical_device.get_queue_families(surface)),
+        surface               (instance.create_surface(window)),
+        surface_format        (get_surface_format()),
+        surface_extent        (get_surface_extent(width, height)),
+        surface_queues        (physical_device.get_queue_families(surface)),
         device                (create_device()),
-        graphics_queue        (device.get_queue(queue_families.graphics_queue, 0)),
-        present_queue         (device.get_queue(queue_families.present_queue, 0)),
+        graphics_queue        (device.get_queue(surface_queues.graphics_queue, 0)),
+        present_queue         (device.get_queue(surface_queues.present_queue, 0)),
         descriptor_set_layout (create_descriptor_set_layout()),
         pipeline_layout       (create_pipeline_layout()),
         command_pool          (create_command_pool()),
-        surface_format        (get_surface_format()) {
-
-        // Get surface capabilities
-        const auto surface_capabilities = surface.get_capabilities(physical_device);
-
-        // Get swap surface extent
-        const auto surface_extent = surface.get_extent(surface_capabilities, width, height);
-
-        // Get swap images count
-        const uint32_t swap_image_count = surface_capabilities.maxImageCount > 0
-            ? std::min(surface_capabilities.minImageCount + 1, surface_capabilities.maxImageCount)
-            : surface_capabilities.minImageCount + 1;
-
-        // Get swap present mode
-        const auto present_mode = [this]() {
-            const auto present_modes = surface.get_present_modes(physical_device);
-            
-            auto present_mode = VK_PRESENT_MODE_FIFO_KHR;
-
-            for (const auto& available_present_mode : present_modes) {
-                if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                    return available_present_mode;
-                } else if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-                    present_mode = available_present_mode;
-                }
-            }
-
-            return present_mode;
-        }();
-
-        // Create swapchain
-        const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
-        const auto swapchain = device.create_swapchain({
-            .surface              = surface,
-            .min_image_count      = swap_image_count,
-            .image_format         = surface_format.format,
-            .image_color_space    = surface_format.colorSpace,
-            .image_extent         = surface_extent,
-            .image_array_layers   = 1,
-            .image_usage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .image_sharing_mode   =
-                concurrent ?
-                    VK_SHARING_MODE_CONCURRENT :
-                    VK_SHARING_MODE_EXCLUSIVE,
-            .queue_family_indices =
-                concurrent ?
-                    std::vector<uint32_t>{
-                        queue_families.graphics_queue,
-                        queue_families.present_queue
-                    } :
-                    std::vector<uint32_t>{},
-            .pre_transform        = surface_capabilities.currentTransform,
-            .composite_alpha      = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .present_mode         = present_mode,
-            .clipped              = VK_TRUE,
-            .old_swapchain        = VK_NULL_HANDLE
-        });
-
-        // Create swapchain image views
-        const auto swapchain_image_views = [&]() {
-            // Get swapchain images
-            const auto swapchain_images = swapchain.get_images();
-            
-            std::vector<vulkan::ImageView> swapchain_image_views{swapchain_images.size()};
-            for (size_t i = 0; i < swapchain_images.size(); ++i) {
-                swapchain_image_views[i] = device.create_image_view({
-                    .image      = swapchain_images[i],
-                    .view_type  = VK_IMAGE_VIEW_TYPE_2D,
-                    .format     = surface_format.format,
-                    .components = {
-                        .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                        .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                        .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                        .a = VK_COMPONENT_SWIZZLE_IDENTITY
-                    },
-                    .subresource_range = {
-                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .baseMipLevel   = 0,
-                        .levelCount     = 1,
-                        .baseArrayLayer = 0,
-                        .layerCount     = 1
-                    }
-                });
-            }
-            return swapchain_image_views;
-        }();
-
-        // Create render pass
-        const auto render_pass = device.create_render_pass({
-            .attachments = {
-                {{
-                    .format           = surface_format.format,
-                    .samples          = VK_SAMPLE_COUNT_1_BIT,
-                    .load_op          = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                    .store_op         = VK_ATTACHMENT_STORE_OP_STORE,
-                    .stencil_load_op  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                    .stencil_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                    .initial_layout   = VK_IMAGE_LAYOUT_UNDEFINED,
-                    .final_layout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-                }}
-            },
-            .subpasses = {
-                {{
-                    .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    .color_attachments = {
-                        {
-                            .attachment = 0,
-                            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-                        }
-                    },
-                }}
-            },
-            .dependencies = {
-                {{
-                    // Subpasses
-                    .src_subpass = VK_SUBPASS_EXTERNAL,
-                    .dst_subpass = 0,
-
-                    // Stage masks
-                    .src_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    .dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-
-                    // Access masks
-                    .src_access_mask = 0,
-                    .dst_access_mask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                }}
-            }
-        });
-
-        // Create pipelines
-        const auto pipeline = device.create_pipeline({
-            .stages = {
-                // Vertex shader stage
-                {
-                    .stage  = VK_SHADER_STAGE_VERTEX_BIT,
-                    .module = device.create_shader_module("vert.spv"),
-                    .name   = "main",
-                },
-                // Geometry shader stage
-                {
-                    .stage  = VK_SHADER_STAGE_GEOMETRY_BIT,
-                    .module = device.create_shader_module("geom.spv"),
-                    .name   = "main",
-                },
-                // Fragment shader stage
-                {
-                    .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
-                    .module = device.create_shader_module("frag.spv"),
-                    .name   = "main",
-                }
-            },
-
-            .vertex_input_state = {
-                .vertex_binding_descriptions = {
-                    {
-                        .binding   = 0,
-                        .stride    = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertex_attribute_descriptions = {
-                    {
-                        .location = 0,
-                        .binding  = 0,
-                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                        .offset   = offsetof(Vertex, position)
-                    },
-                    {
-                        .location = 1,
-                        .binding  = 0,
-                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                        .offset   = offsetof(Vertex, color)
-                    }
-                }
-            },
-
-            .input_assembly_state = {
-                .topology                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                .primitive_restart_enable = VK_FALSE
-            },
-
-            .viewport_state = {
-                .viewports = {
-                    {
-                        .x        = 0.0f,
-                        .y        = 0.0f,
-                        .width    = static_cast<float>(surface_extent.width),
-                        .height   = static_cast<float>(surface_extent.height),
-                        .minDepth = 0.0f,
-                        .maxDepth = 1.0f
-                    }
-                },
-
-                .scissors = {
-                    {
-                        .offset = { 0, 0 },
-                        .extent = surface_extent
-                    }
-                }
-            },
-
-            .rasterization_state = {
-                .depth_clamp_enable         = VK_FALSE,
-                .rasterizer_discard_enable  = VK_FALSE,
-                .polygon_mode               = VK_POLYGON_MODE_FILL,
-                .cull_mode                  = VK_CULL_MODE_BACK_BIT,
-                .front_face                 = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-                .depth_bias_enable          = VK_FALSE,
-                .depth_bias_constant_factor = 0.0f,
-                .depth_bias_clamp           = 0.0f,
-                .depth_bias_slope_factor    = 0.0f,
-                .line_width                 = 1.0f
-            },
-
-            .multisample_state = {
-                .rasterization_samples = VK_SAMPLE_COUNT_1_BIT,
-                .min_sample_shading    = 1.0f,
-            },
-
-            .color_blend_state = {
-                .logic_op_enable = VK_FALSE,
-                .attachments = {
-                    {{
-                        .blendEnable         = VK_FALSE,
-                        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                        .colorBlendOp        = VK_BLEND_OP_ADD,
-                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                        .alphaBlendOp        = VK_BLEND_OP_ADD,
-                        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
-                                             | VK_COLOR_COMPONENT_G_BIT
-                                             | VK_COLOR_COMPONENT_B_BIT
-                                             | VK_COLOR_COMPONENT_A_BIT
-                    }}
-                },
-
-                .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
-            },
-
-            .layout = pipeline_layout,
-
-            .render_pass = render_pass,
-        }, VK_NULL_HANDLE);
-
-        // Create framebuffers
-        std::vector<vulkan::Framebuffer> swapchain_framebuffers{swapchain_image_views.size()};
-        for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
-            swapchain_framebuffers[i] = device.create_framebuffer({
-                .render_pass = render_pass,
-                .attachments = {{
-                    swapchain_image_views[i]
-                }},
-                .width  = surface_extent.width,
-                .height = surface_extent.height,
-                .layers = 1
-            });
-        }
+        swapchain             (create_swapchain()),
+        image_views           (create_image_views()),
+        render_pass           (create_render_pass()),
+        pipeline              (create_pipeline()),
+        framebuffers          (create_framebuffers()) {
 
         // Create vertices
         const std::vector<Vertex> vertices = {
@@ -482,7 +231,7 @@ namespace stirling {
         // Create uniform buffers
         std::vector<vulkan::Buffer>       uniform_buffers;
         std::vector<vulkan::DeviceMemory> uniform_buffer_memories;
-        for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
+        for (size_t i = 0; i < image_views.size(); ++i) {
             // Create uniform buffer
             uniform_buffers.emplace_back(device.create_buffer({
                 .size         = sizeof(UniformBufferObject),
@@ -512,19 +261,19 @@ namespace stirling {
             .pool_sizes = {
                 {
                     .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .descriptorCount = static_cast<uint32_t>(swapchain_image_views.size())
+                    .descriptorCount = static_cast<uint32_t>(image_views.size())
                 }
             },
-            .max_sets = static_cast<uint32_t>(swapchain_image_views.size())
+            .max_sets = static_cast<uint32_t>(image_views.size())
         });
 
         // Allocate descriptor sets
         const auto descriptor_sets = descriptor_pool.allocate_descriptor_sets({
-            .set_layouts = {swapchain_image_views.size(), descriptor_set_layout}
+            .set_layouts = {image_views.size(), descriptor_set_layout}
         });
 
         // Update descriptor sets
-        for (size_t i = 0; i < swapchain_image_views.size(); ++i) {
+        for (size_t i = 0; i < image_views.size(); ++i) {
             vulkan::update_descriptor_sets(device, {
                 {{
                     .dst_set           = descriptor_sets[i],
@@ -544,7 +293,7 @@ namespace stirling {
         // Allocate command buffers
         const auto command_buffers = command_pool.allocate_command_buffers({
             .level                = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .command_buffer_count = static_cast<uint32_t>(swapchain_framebuffers.size())
+            .command_buffer_count = static_cast<uint32_t>(framebuffers.size())
         });
 
         // Record command buffers
@@ -555,7 +304,7 @@ namespace stirling {
                 }})
                 .begin_render_pass({{
                     .render_pass  = render_pass,
-                    .framebuffer  = swapchain_framebuffers[i],
+                    .framebuffer  = framebuffers[i],
                     .render_area  = {
                         .offset = { 0, 0 },
                         .extent = surface_extent
@@ -692,11 +441,11 @@ namespace stirling {
                 std::vector<vulkan::DeviceQueueCreateInfo> create_infos;
                 // Only one queue per unique queue family index
                 for (const auto queue_family : std::set<uint32_t>{
-                    queue_families.graphics_queue,
-                    queue_families.present_queue
+                    surface_queues.graphics_queue,
+                    surface_queues.present_queue
                 }) {
                     create_infos.push_back({{
-                        .queue_family_index = queue_families.graphics_queue,
+                        .queue_family_index = surface_queues.graphics_queue,
                         .queue_priorities   = { 1.0f }
                     }});
                 }
@@ -734,7 +483,7 @@ namespace stirling {
 
     vulkan::CommandPool StirlingInstance::create_command_pool() const {
         return device.create_command_pool({
-            .queue_family_index = queue_families.graphics_queue
+            .queue_family_index = surface_queues.graphics_queue
         });
     }
 
@@ -754,6 +503,275 @@ namespace stirling {
 
         return surface_formats[0];
     }
+
+    vulkan::Extent2D StirlingInstance::get_surface_extent(uint32_t width, uint32_t height) const {
+        const auto surface_capabilities = surface.get_capabilities(physical_device);
+        if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return surface_capabilities.currentExtent;
+        } else {
+            return {
+                .width = std::max(surface_capabilities.minImageExtent.width, std::min(surface_capabilities.maxImageExtent.width, width)),
+                .height = std::max(surface_capabilities.minImageExtent.height, std::min(surface_capabilities.maxImageExtent.height, height))
+            };
+        }
+    }
+
+    vulkan::Swapchain StirlingInstance::create_swapchain() const {
+        // Get swap images count
+        const auto surface_capabilities = surface.get_capabilities(physical_device);
+        const uint32_t swap_image_count = surface_capabilities.maxImageCount > 0
+            ? std::min(surface_capabilities.minImageCount + 1, surface_capabilities.maxImageCount)
+            : surface_capabilities.minImageCount + 1;
+
+        // Get swap present mode
+        const auto present_mode = [this]() {
+            const auto present_modes = surface.get_present_modes(physical_device);
+            
+            auto present_mode = VK_PRESENT_MODE_FIFO_KHR;
+
+            for (const auto& available_present_mode : present_modes) {
+                if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                    return available_present_mode;
+                } else if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+                    present_mode = available_present_mode;
+                }
+            }
+
+            return present_mode;
+        }();
+
+        // Create swapchain
+        const bool concurrent = surface_queues.graphics_queue != surface_queues.present_queue;
+        return device.create_swapchain({
+            .surface              = surface,
+            .min_image_count      = swap_image_count,
+            .image_format         = surface_format.format,
+            .image_color_space    = surface_format.colorSpace,
+            .image_extent         = surface_extent,
+            .image_array_layers   = 1,
+            .image_usage          = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .image_sharing_mode   =
+                concurrent ?
+                    VK_SHARING_MODE_CONCURRENT :
+                    VK_SHARING_MODE_EXCLUSIVE,
+            .queue_family_indices =
+                concurrent ?
+                    std::vector<uint32_t>{
+                        surface_queues.graphics_queue,
+                        surface_queues.present_queue
+                    } :
+                    std::vector<uint32_t>{},
+            .pre_transform        = surface_capabilities.currentTransform,
+            .composite_alpha      = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .present_mode         = present_mode,
+            .clipped              = VK_TRUE,
+            .old_swapchain        = VK_NULL_HANDLE
+        });
+    }
+
+    std::vector<vulkan::ImageView> StirlingInstance::create_image_views() const {
+        // Get swapchain images
+        const auto swapchain_images = swapchain.get_images();
+        
+        std::vector<vulkan::ImageView> image_views{swapchain_images.size()};
+        for (size_t i = 0; i < swapchain_images.size(); ++i) {
+            image_views[i] = device.create_image_view({
+                .image      = swapchain_images[i],
+                .view_type  = VK_IMAGE_VIEW_TYPE_2D,
+                .format     = surface_format.format,
+                .components = {
+                    .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                    .a = VK_COMPONENT_SWIZZLE_IDENTITY
+                },
+                .subresource_range = {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1
+                }
+            });
+        }
+        return image_views;
+    }
+
+    vulkan::RenderPass StirlingInstance::create_render_pass() const {
+        return device.create_render_pass({
+            .attachments = {
+                {{
+                    .format           = surface_format.format,
+                    .samples          = VK_SAMPLE_COUNT_1_BIT,
+                    .load_op          = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    .store_op         = VK_ATTACHMENT_STORE_OP_STORE,
+                    .stencil_load_op  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                    .stencil_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                    .initial_layout   = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .final_layout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                }}
+            },
+            .subpasses = {
+                {{
+                    .pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    .color_attachments = {
+                        {
+                            .attachment = 0,
+                            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                        }
+                    },
+                }}
+            },
+            .dependencies = {
+                {{
+                    // Subpasses
+                    .src_subpass = VK_SUBPASS_EXTERNAL,
+                    .dst_subpass = 0,
+
+                    // Stage masks
+                    .src_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    .dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+
+                    // Access masks
+                    .src_access_mask = 0,
+                    .dst_access_mask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                }}
+            }
+        });
+    }
+
+    vulkan::Pipeline StirlingInstance::create_pipeline() const {    
+        return device.create_pipeline({
+            .stages = {
+                // Vertex shader stage
+                {
+                    .stage  = VK_SHADER_STAGE_VERTEX_BIT,
+                    .module = device.create_shader_module("vert.spv"),
+                    .name   = "main",
+                },
+                // Geometry shader stage
+                {
+                    .stage  = VK_SHADER_STAGE_GEOMETRY_BIT,
+                    .module = device.create_shader_module("geom.spv"),
+                    .name   = "main",
+                },
+                // Fragment shader stage
+                {
+                    .stage  = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .module = device.create_shader_module("frag.spv"),
+                    .name   = "main",
+                }
+            },
+
+            .vertex_input_state = {
+                .vertex_binding_descriptions = {
+                    {
+                        .binding   = 0,
+                        .stride    = sizeof(Vertex),
+                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+                    }
+                },
+                .vertex_attribute_descriptions = {
+                    {
+                        .location = 0,
+                        .binding  = 0,
+                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                        .offset   = offsetof(Vertex, position)
+                    },
+                    {
+                        .location = 1,
+                        .binding  = 0,
+                        .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                        .offset   = offsetof(Vertex, color)
+                    }
+                }
+            },
+
+            .input_assembly_state = {
+                .topology                 = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .primitive_restart_enable = VK_FALSE
+            },
+
+            .viewport_state = {
+                .viewports = {
+                    {
+                        .x        = 0.0f,
+                        .y        = 0.0f,
+                        .width    = static_cast<float>(surface_extent.width),
+                        .height   = static_cast<float>(surface_extent.height),
+                        .minDepth = 0.0f,
+                        .maxDepth = 1.0f
+                    }
+                },
+
+                .scissors = {
+                    {
+                        .offset = { 0, 0 },
+                        .extent = surface_extent
+                    }
+                }
+            },
+
+            .rasterization_state = {
+                .depth_clamp_enable         = VK_FALSE,
+                .rasterizer_discard_enable  = VK_FALSE,
+                .polygon_mode               = VK_POLYGON_MODE_FILL,
+                .cull_mode                  = VK_CULL_MODE_BACK_BIT,
+                .front_face                 = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+                .depth_bias_enable          = VK_FALSE,
+                .depth_bias_constant_factor = 0.0f,
+                .depth_bias_clamp           = 0.0f,
+                .depth_bias_slope_factor    = 0.0f,
+                .line_width                 = 1.0f
+            },
+
+            .multisample_state = {
+                .rasterization_samples = VK_SAMPLE_COUNT_1_BIT,
+                .min_sample_shading    = 1.0f,
+            },
+
+            .color_blend_state = {
+                .logic_op_enable = VK_FALSE,
+                .attachments = {
+                    {{
+                        .blendEnable         = VK_FALSE,
+                        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                        .colorBlendOp        = VK_BLEND_OP_ADD,
+                        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                        .alphaBlendOp        = VK_BLEND_OP_ADD,
+                        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT
+                                             | VK_COLOR_COMPONENT_G_BIT
+                                             | VK_COLOR_COMPONENT_B_BIT
+                                             | VK_COLOR_COMPONENT_A_BIT
+                    }}
+                },
+
+                .blend_constants = { 0.0f, 0.0f, 0.0f, 0.0f }
+            },
+
+            .layout = pipeline_layout,
+
+            .render_pass = render_pass,
+        }, VK_NULL_HANDLE);
+    }
+
+    std::vector<vulkan::Framebuffer> StirlingInstance::create_framebuffers() const {
+        std::vector<vulkan::Framebuffer> framebuffers{image_views.size()};
+        for (size_t i = 0; i < framebuffers.size(); ++i) {
+            framebuffers[i] = device.create_framebuffer({
+                .render_pass = render_pass,
+                .attachments = {{
+                    image_views[i]
+                }},
+                .width  = surface_extent.width,
+                .height = surface_extent.height,
+                .layers = 1
+            });
+        }
+        return framebuffers;
+    };
 }
 
 int main() {
