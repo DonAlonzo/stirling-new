@@ -270,7 +270,7 @@ namespace stirling {
 
         // Update descriptor sets
         for (size_t i = 0; i < image_views.size(); ++i) {
-            vulkan::update_descriptor_sets(device, {
+            device.update_descriptor_sets({
                 {{
                     .dst_set           = descriptor_sets[i],
                     .dst_binding       = 0,

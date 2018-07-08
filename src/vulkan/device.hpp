@@ -85,6 +85,10 @@ namespace stirling { namespace vulkan {
         Fence create_fence(bool signaled = false) const;
         std::vector<Fence> create_fences(size_t count, bool signaled = false) const;
 
+        void update_descriptor_sets(
+            const std::vector<WriteDescriptorSet>& descriptor_writes,
+            const std::vector<CopyDescriptorSet>&  descriptor_copies) const;
+
         void wait_idle() const;
 
     private:

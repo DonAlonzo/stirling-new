@@ -273,6 +273,13 @@ namespace stirling { namespace vulkan {
         return vulkan::get_queue(device, queue_family, queue_index);
     }
 
+    void Device::update_descriptor_sets(
+        const std::vector<WriteDescriptorSet>& descriptor_writes,
+        const std::vector<CopyDescriptorSet>&  descriptor_copies) const {
+
+        vulkan::update_descriptor_sets(device, descriptor_writes, descriptor_copies);
+    }
+
     void Device::wait_idle() const {
         vkDeviceWaitIdle(device);
     }
