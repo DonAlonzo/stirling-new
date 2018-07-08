@@ -2,6 +2,7 @@
 
 #include "deleter.hpp"
 #include "physical_device.hpp"
+#include "surface.hpp"
 #include "vulkan_structs.hpp"
 #include "vulkan.hpp"
 
@@ -25,7 +26,7 @@ namespace stirling { namespace vulkan {
         inline operator const VkInstance() const { return instance; }
         
         Deleter<VkDebugReportCallbackEXT> create_debug_report_callback(const DebugReportCallbackCreateInfoEXT& create_info) const;
-        Deleter<VkSurfaceKHR> create_surface(GLFWwindow* window) const;
+        Surface create_surface(GLFWwindow* window) const;
         std::vector<PhysicalDevice> get_physical_devices() const;
 
     private:

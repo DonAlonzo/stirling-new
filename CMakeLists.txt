@@ -33,6 +33,7 @@ target_sources(${PROJECT_NAME}
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/instance.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/physical_device.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/pipeline.cpp
+        ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/surface.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/swapchain.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/vulkan/queue.cpp
         ${${PROJECT_NAME}_SOURCE_DIR}/file.cpp

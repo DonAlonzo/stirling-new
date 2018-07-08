@@ -7,7 +7,6 @@
 
 #include "file.hpp"
 #include "main.hpp"
-#include "window.hpp"
 
 #include <vulkan/vulkan.h>
 
@@ -21,129 +20,36 @@
 
 namespace stirling {
 
-    VkBool32 debug_callback(
-        VkDebugReportFlagsEXT      flags,
-        VkDebugReportObjectTypeEXT object_type,
-        uint64_t                   object,
-        size_t                     location,
-        int32_t                    message_code,
-        const char*                layer_prefix,
-        const char*                message,
-        void*                      user_data) {
-
-        std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
-        return VK_FALSE;
-    }
-
-    StirlingInstance::StirlingInstance() {
-        const uint32_t width = 1024;
-        const uint32_t height = 768;
-
-        // Create window
-        const Window window{width, height, "Stirling Engine"};
-
-        // Set enabled extensions
-        auto enabled_extensions = window.get_required_instance_extensions();
-        enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-
-        // Create instance
-        const vulkan::Instance instance{{
-            .application_info = {{
-                .application_name    = "Stirling Engine Demo",
-                .application_version = VK_MAKE_VERSION(1, 0, 0),
-                .engine_name         = "Stirling Engine",
-                .engine_version      = VK_MAKE_VERSION(1, 0, 0),
-                .api_version         = VK_API_VERSION_1_0
-            }},
-            .enabled_layers = {
-                "VK_LAYER_LUNARG_standard_validation"
-            },
-            .enabled_extensions = enabled_extensions
-        }};
-
-        // Create debug report callback
-        const auto debug_callback_handle = instance.create_debug_report_callback({{
-            .flags     = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
-            .callback  = debug_callback,
-        }});
-
-        // Create window surface
-        const auto surface = instance.create_surface(window);
-
-        // Pick physical device
-        const auto physical_device = [physical_devices = instance.get_physical_devices()]() {
-            for (const auto& physical_device : physical_devices) {
-                const auto properties = physical_device.get_physical_device_properties();
-                const auto features = physical_device.get_physical_device_features();
-
-                return physical_device;
-            }
-            throw "Failed to find a suitable GPU.";
-        }();
-
-        // Get queue families on physical device
-        const auto queue_families = physical_device.get_queue_families(surface);
-
-        // Create device
-        const vulkan::Device device{{
-            .queues = [&queue_families]() {
-                std::vector<vulkan::DeviceQueueCreateInfo> create_infos;
-                // Only one queue per unique queue family index
-                for (const auto queue_family : std::set<uint32_t>{
-                    queue_families.graphics_queue,
-                    queue_families.present_queue
-                }) {
-                    create_infos.push_back({{
-                        .queue_family_index = queue_families.graphics_queue,
-                        .queue_priorities   = { 1.0f }
-                    }});
-                }
-                return create_infos;
-            }(),
-            .enabled_extensions = {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME    
-            },
-            .enabled_features = {
-                .geometryShader = VK_TRUE
-            }
-        }, physical_device};
-
-        // Retrieve queue handles
-        const auto graphics_queue = device.get_queue(queue_families.graphics_queue, 0);
-        const auto present_queue = device.get_queue(queue_families.present_queue, 0);
-        
-        // Get supported surface formats
-        const auto surface_formats = vulkan::get_surface_formats(physical_device, surface);
-
-        // Get supported presentation modes
-        const auto present_modes = vulkan::get_surface_present_modes(physical_device, surface);
+    StirlingInstance::StirlingInstance(uint32_t width, uint32_t height) :
+        window                (width, height, "Stirling Engine"),
+        instance              (create_instance()),
+        debugger              (create_debugger()),
+        surface               (instance.create_surface(window)),
+        physical_device       (pick_physical_device()),
+        queue_families        (physical_device.get_queue_families(surface)),
+        device                (create_device()),
+        graphics_queue        (device.get_queue(queue_families.graphics_queue, 0)),
+        present_queue         (device.get_queue(queue_families.present_queue, 0)),
+        descriptor_set_layout (create_descriptor_set_layout()),
+        pipeline_layout       (create_pipeline_layout()),
+        command_pool          (create_command_pool()),
+        surface_format        (get_surface_format()) {
 
         // Get surface capabilities
-        const auto surface_capabilities = vulkan::get_surface_capabilities(physical_device, surface);
+        const auto surface_capabilities = surface.get_capabilities(physical_device);
+
+        // Get swap surface extent
+        const auto surface_extent = surface.get_extent(surface_capabilities, width, height);
 
         // Get swap images count
         const uint32_t swap_image_count = surface_capabilities.maxImageCount > 0
             ? std::min(surface_capabilities.minImageCount + 1, surface_capabilities.maxImageCount)
             : surface_capabilities.minImageCount + 1;
 
-        // Get swap surface format
-        const auto surface_format = [&]() -> VkSurfaceFormatKHR {
-            if (surface_formats.size() == 1 && surface_formats[0].format == VK_FORMAT_UNDEFINED) {
-                return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-            }
-
-            for (const auto& surface_format : surface_formats) {
-                if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM &&
-                    surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-                    return surface_format;
-                }
-            }
-
-            return surface_formats[0];
-        }();
-
         // Get swap present mode
-        const auto present_mode = [&present_modes]() {
+        const auto present_mode = [this]() {
+            const auto present_modes = surface.get_present_modes(physical_device);
+            
             auto present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
             for (const auto& available_present_mode : present_modes) {
@@ -156,33 +62,6 @@ namespace stirling {
 
             return present_mode;
         }();
-
-        // Get swap surface extent
-        const auto surface_extent = vulkan::get_surface_extent(surface_capabilities, width, height);
-
-        // Create descriptor set layout
-        const auto descriptor_set_layout = device.create_descriptor_set_layout({
-            .bindings = {
-                {{
-                    .binding         = 0,
-                    .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT
-                }}
-            }
-        });
-
-        // Create pipeline layout
-        const auto pipeline_layout = device.create_pipeline_layout({
-            .set_layouts = {
-                descriptor_set_layout
-            }
-        });
-
-        // Create command pool
-        const auto command_pool = device.create_command_pool({
-            .queue_family_index = queue_families.graphics_queue
-        });
 
         // Create swapchain
         const bool concurrent = queue_families.graphics_queue != queue_families.present_queue;
@@ -217,7 +96,7 @@ namespace stirling {
             // Get swapchain images
             const auto swapchain_images = swapchain.get_images();
             
-            std::vector<Deleter<VkImageView>> swapchain_image_views{swapchain_images.size()};
+            std::vector<vulkan::ImageView> swapchain_image_views{swapchain_images.size()};
             for (size_t i = 0; i < swapchain_images.size(); ++i) {
                 swapchain_image_views[i] = device.create_image_view({
                     .image      = swapchain_images[i],
@@ -400,7 +279,7 @@ namespace stirling {
         }, VK_NULL_HANDLE);
 
         // Create framebuffers
-        std::vector<Deleter<VkFramebuffer>> swapchain_framebuffers{swapchain_image_views.size()};
+        std::vector<vulkan::Framebuffer> swapchain_framebuffers{swapchain_image_views.size()};
         for (size_t i = 0; i < swapchain_framebuffers.size(); ++i) {
             swapchain_framebuffers[i] = device.create_framebuffer({
                 .render_pass = render_pass,
@@ -700,7 +579,6 @@ namespace stirling {
         const auto render_finished_semaphores = device.create_semaphores(max_frames_in_flight);
         const auto in_flight_fences = device.create_fences(max_frames_in_flight, true);
 
-        // Loop
         size_t current_frame = 0;
         while (!window.should_close()) {
             /// Wait for frame to be finished and reset fence
@@ -732,30 +610,18 @@ namespace stirling {
             // Submit command buffer to graphics queue
             graphics_queue.submit({
                 {{
-                    .wait_semaphores = {
-                        image_available_semaphores[current_frame]
-                    },
+                    .wait_semaphores     = { image_available_semaphores[current_frame] },
                     .wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    .command_buffers = {
-                        command_buffers[image_index]
-                    },
-                    .signal_semaphores = {
-                        render_finished_semaphores[current_frame]
-                    }
+                    .command_buffers     = { command_buffers[image_index] },
+                    .signal_semaphores   = { render_finished_semaphores[current_frame] }
                 }}
             }, in_flight_fences[current_frame]);
 
             // Present images
             present_queue.present({{
-                .wait_semaphores = {
-                    render_finished_semaphores[current_frame]
-                },
-                .swapchains = {
-                    swapchain
-                },
-                .image_indices = {
-                    image_index
-                }
+                .wait_semaphores = { render_finished_semaphores[current_frame] },
+                .swapchains      = { swapchain },
+                .image_indices   = { image_index }
             }});
 
             // Wait until queue is idle
@@ -769,11 +635,130 @@ namespace stirling {
         device.wait_idle();
     }
 
+    vulkan::Instance StirlingInstance::create_instance() const {
+        // Set enabled extensions
+        auto enabled_extensions = window.get_required_instance_extensions();
+        enabled_extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+
+        // Create instance
+        return {{
+            .application_info = {{
+                .application_name    = "Stirling Engine Demo",
+                .application_version = VK_MAKE_VERSION(1, 0, 0),
+                .engine_name         = "Stirling Engine",
+                .engine_version      = VK_MAKE_VERSION(1, 0, 0),
+                .api_version         = VK_API_VERSION_1_0
+            }},
+            .enabled_layers = {
+                "VK_LAYER_LUNARG_standard_validation"
+            },
+            .enabled_extensions = enabled_extensions
+        }};
+    }
+
+    vulkan::DebugReportCallback StirlingInstance::create_debugger() const {
+        return instance.create_debug_report_callback({{
+            .flags     = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+            .callback  = [](
+                VkDebugReportFlagsEXT      flags,
+                VkDebugReportObjectTypeEXT object_type,
+                uint64_t                   object,
+                size_t                     location,
+                int32_t                    message_code,
+                const char*                layer_prefix,
+                const char*                message,
+                void*                      user_data) -> VkBool32 {
+
+                std::cerr << "\033[1;31m[stirling]\033[0m " << message << '\n';
+                return VK_FALSE;
+            }
+        }});
+    }
+
+    vulkan::PhysicalDevice StirlingInstance::pick_physical_device() const {
+        const auto physical_devices = instance.get_physical_devices();
+        for (const auto& physical_device : physical_devices) {
+            const auto properties = physical_device.get_properties();
+            const auto features = physical_device.get_features();
+
+            return physical_device;
+        }
+        throw "Failed to find a suitable GPU.";
+    }
+
+    vulkan::Device StirlingInstance::create_device() const {
+        return physical_device.create_device({
+            .queues = [this]() {
+                std::vector<vulkan::DeviceQueueCreateInfo> create_infos;
+                // Only one queue per unique queue family index
+                for (const auto queue_family : std::set<uint32_t>{
+                    queue_families.graphics_queue,
+                    queue_families.present_queue
+                }) {
+                    create_infos.push_back({{
+                        .queue_family_index = queue_families.graphics_queue,
+                        .queue_priorities   = { 1.0f }
+                    }});
+                }
+                return create_infos;
+            }(),
+            .enabled_extensions = {
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME    
+            },
+            .enabled_features = {
+                .geometryShader = VK_TRUE
+            }
+        });
+    }
+
+    vulkan::DescriptorSetLayout StirlingInstance::create_descriptor_set_layout() const {
+        return device.create_descriptor_set_layout({
+            .bindings = {
+                {{
+                    .binding         = 0,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .descriptorCount = 1,
+                    .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT
+                }}
+            }
+        });
+    }
+
+    vulkan::PipelineLayout StirlingInstance::create_pipeline_layout() const {
+        return device.create_pipeline_layout({
+            .set_layouts = {
+                descriptor_set_layout
+            }
+        });
+    }
+
+    vulkan::CommandPool StirlingInstance::create_command_pool() const {
+        return device.create_command_pool({
+            .queue_family_index = queue_families.graphics_queue
+        });
+    }
+
+    vulkan::SurfaceFormat StirlingInstance::get_surface_format() const {
+        const auto surface_formats = surface.get_formats(physical_device);
+
+        if (surface_formats.size() == 1 && surface_formats[0].format == VK_FORMAT_UNDEFINED) {
+            return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+        }
+
+        for (const auto& surface_format : surface_formats) {
+            if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM &&
+                surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                return surface_format;
+            }
+        }
+
+        return surface_formats[0];
+    }
 }
 
 int main() {
     try {
-        stirling::StirlingInstance stirling_instance;
+        stirling::StirlingInstance stirling_instance{1024, 768};
     } catch (const char* message) {
         std::cout << message << '\n';
     }

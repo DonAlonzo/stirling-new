@@ -1,5 +1,6 @@
 #pragma once
 
+#include "surface.hpp"
 #include "vulkan_create.hpp"
 #include "vulkan_helpers.hpp"
 #include "vulkan_structs.hpp"
@@ -13,6 +14,13 @@
 #include <vector>
 
 namespace stirling { namespace vulkan {
+
+    using DebugReportCallback = Deleter<VkDebugReportCallbackEXT>;
+    using DescriptorSetLayout = Deleter<VkDescriptorSetLayout>;
+    using PipelineLayout = Deleter<VkPipelineLayout>;
+    using ImageView = Deleter<VkImageView>;
+    using Framebuffer = Deleter<VkFramebuffer>;
+    using SurfaceFormat = VkSurfaceFormatKHR;
 
     inline void free_command_buffer(
         VkDevice        device,
@@ -250,87 +258,6 @@ namespace stirling { namespace vulkan {
         return features;
     }
 
-    inline VkBool32 get_surface_present_support(
-        VkPhysicalDevice physical_device,
-        uint32_t         queue_family_index,
-        VkSurfaceKHR     surface) {
-
-        VkBool32 present_support;
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, queue_family_index, surface, &present_support),
-            "Failed to get surface present support."
-        );
-        return present_support;
-    }
-
-    inline std::vector<VkSurfaceFormatKHR> get_surface_formats(
-        VkPhysicalDevice physical_device,
-        VkSurfaceKHR     surface) {
-
-        // Get supported surface format count
-        uint32_t surface_format_count;
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr),
-            "Failed to get number of surface formats."
-        );
-
-        // Get supported surface formats
-        std::vector<VkSurfaceFormatKHR> surface_formats{surface_format_count};
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()),
-            "Failed to get surface formats."
-        );
-        return surface_formats;
-    }
-
-    inline std::vector<VkPresentModeKHR> get_surface_present_modes(
-        VkPhysicalDevice physical_device,
-        VkSurfaceKHR     surface) {
-
-        // Get surface present mode count
-        uint32_t present_mode_count;
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, nullptr),
-            "Failed to get number of surface present modes."
-        );
-
-        // Get surface present modes
-        std::vector<VkPresentModeKHR> present_modes{present_mode_count};
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, present_modes.data()),
-            "Failed to get surface present modes."
-        );
-        return present_modes;
-    }
-
-    inline VkSurfaceCapabilitiesKHR get_surface_capabilities(
-        VkPhysicalDevice physical_device,
-        VkSurfaceKHR     surface) {
-
-        // Get surface capabilities
-        VkSurfaceCapabilitiesKHR surface_capabilities;
-        vulkan_assert(
-            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities),
-            "Failed to get surface capabilities."
-        );
-        return surface_capabilities;
-    }
-
-    inline VkExtent2D get_surface_extent(
-        VkSurfaceCapabilitiesKHR surface_capabilities,
-        uint32_t                 width,
-        uint32_t                 height) {
-
-        VkExtent2D surface_extent;
-        if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            surface_extent = surface_capabilities.currentExtent;
-        } else {
-            surface_extent.width = std::max(surface_capabilities.minImageExtent.width, std::min(surface_capabilities.maxImageExtent.width, width));
-            surface_extent.height = std::max(surface_capabilities.minImageExtent.height, std::min(surface_capabilities.maxImageExtent.height, height));
-        }
-        return surface_extent;
-    }
-
     inline std::vector<VkQueueFamilyProperties> get_queue_family_properties(
         VkPhysicalDevice physical_device) {
         
@@ -346,7 +273,7 @@ namespace stirling { namespace vulkan {
 
     inline QueueFamilyIndices get_queue_families(
         VkPhysicalDevice physical_device,
-        VkSurfaceKHR     surface) {
+        const Surface&   surface) {
 
         const auto queue_family_properties = get_queue_family_properties(physical_device);
 
@@ -360,7 +287,7 @@ namespace stirling { namespace vulkan {
                 }
 
                 // Check if present queue
-                if (get_surface_present_support(physical_device, i, surface)) {
+                if (surface.get_present_support(physical_device, i)) {
                     queue_family_indices.present_queue = i;
                 }
             }

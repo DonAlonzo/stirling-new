@@ -32,7 +32,7 @@ namespace stirling { namespace vulkan {
         return vulkan::create_debug_report_callback(create_info, instance);
     }
 
-    Deleter<VkSurfaceKHR> Instance::create_surface(
+    Surface Instance::create_surface(
         GLFWwindow* window) const {
 
         return vulkan::create_surface(instance, window);
