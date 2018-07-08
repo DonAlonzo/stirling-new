@@ -60,7 +60,6 @@ namespace stirling { namespace vulkan {
 
         inline operator const VkDevice() const { return device; }
         
-        VkMemoryRequirements get_buffer_memory_requirements(VkBuffer buffer) const;
         Queue get_queue(uint32_t queue_family, uint32_t queue_index) const;
         
         DeviceMemory allocate_memory(const MemoryAllocateInfo& allocate_info) const;

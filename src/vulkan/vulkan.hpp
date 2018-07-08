@@ -23,6 +23,7 @@ namespace stirling { namespace vulkan {
     using SurfaceFormat = VkSurfaceFormatKHR;
     using Extent2D = VkExtent2D;
     using RenderPass = Deleter<VkRenderPass>;
+    using MemoryRequirements = VkMemoryRequirements;
 
     inline void free_command_buffer(
         VkDevice        device,

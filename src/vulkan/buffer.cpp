@@ -40,5 +40,8 @@ namespace stirling { namespace vulkan {
         vkBindBufferMemory(device, buffer, memory, offset);
     }
 
+    MemoryRequirements Buffer::get_memory_requirements() const {
+        return vulkan::get_buffer_memory_requirements(device, buffer);
+    }
 
 }}

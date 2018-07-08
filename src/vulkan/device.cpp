@@ -33,10 +33,6 @@ namespace stirling { namespace vulkan {
         device (create_device(create_info, physical_device)) {
     }
 
-    VkMemoryRequirements Device::get_buffer_memory_requirements(VkBuffer buffer) const {
-        return vulkan::get_buffer_memory_requirements(device, buffer);
-    }
-
     DeviceMemory Device::allocate_memory(const MemoryAllocateInfo& allocate_info) const {
         return {allocate_info, device};
     }

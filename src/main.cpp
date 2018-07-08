@@ -66,7 +66,7 @@ namespace stirling {
         });
 
         // Find memory requirements for vertex buffer
-        auto memory_requirements = device.get_buffer_memory_requirements(vertex_buffer);
+        auto memory_requirements = vertex_buffer.get_memory_requirements();
 
         // Allocate memory for vertex buffer
         const auto vertex_buffer_memory = device.allocate_memory({
@@ -89,7 +89,7 @@ namespace stirling {
             });
 
             // Find memory requirements for staging buffer
-            memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
+            memory_requirements = staging_buffer.get_memory_requirements();
 
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({
@@ -151,7 +151,7 @@ namespace stirling {
         });
 
         // Find memory requirements for index buffer
-        memory_requirements = device.get_buffer_memory_requirements(index_buffer);
+        memory_requirements = index_buffer.get_memory_requirements();
 
         // Allocate memory for index buffer
         const auto index_buffer_memory = device.allocate_memory({
@@ -174,7 +174,7 @@ namespace stirling {
             });
 
             // Find memory requirements for staging buffer
-            memory_requirements = device.get_buffer_memory_requirements(staging_buffer);
+            memory_requirements = staging_buffer.get_memory_requirements();
 
             // Allocate memory for staging buffer
             const auto staging_buffer_memory = device.allocate_memory({
@@ -237,7 +237,7 @@ namespace stirling {
             }));
 
             // Find memory requirements for uniform buffer
-            memory_requirements = device.get_buffer_memory_requirements(uniform_buffers[i]);
+            memory_requirements = uniform_buffers[i].get_memory_requirements();
 
             // Allocate memory for uniform buffer
             uniform_buffer_memories.emplace_back(device.allocate_memory({
