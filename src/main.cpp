@@ -270,20 +270,23 @@ namespace stirling {
 
         // Update descriptor sets
         for (size_t i = 0; i < image_views.size(); ++i) {
-            device.update_descriptor_sets({
-                {{
-                    .dst_set           = descriptor_sets[i],
-                    .dst_binding       = 0,
-                    .dst_array_element = 0,
-                    .descriptor_type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .descriptor_count  = 1,
-                    .buffer_info       = {
-                        .buffer = uniform_buffers[i],
-                        .offset = 0,
-                        .range = sizeof(UniformBufferObject) // VK_WHOLE_SIZE
-                    }
-                }}
-            }, {});
+            device.update_descriptor_sets(
+                {
+                    {{
+                        .dst_set           = descriptor_sets[i],
+                        .dst_binding       = 0,
+                        .dst_array_element = 0,
+                        .descriptor_type   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                        .descriptor_count  = 1,
+                        .buffer_info       = {
+                            .buffer = uniform_buffers[i],
+                            .offset = 0,
+                            .range = sizeof(UniformBufferObject) // VK_WHOLE_SIZE
+                        }
+                    }}
+                },
+                {}
+            );
         }
 
         // Allocate command buffers
